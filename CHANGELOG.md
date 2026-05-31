@@ -4,6 +4,66 @@
 
 ---
 
+## 2026-06-01
+
+### [REFACTOR] 目錄結構重整（css / js / images 分類）
+
+**分支：** `refactor/reorganize-structure`
+
+**[搬移] CSS**
+
+| 原路徑 | 新路徑 |
+|--------|--------|
+| `style.css` | `css/style.css` |
+| `logo-lab.css` | `css/logo-lab.css` |
+
+**[搬移] JS（14 支）**
+
+| 原路徑 | 新路徑 |
+|--------|--------|
+| `3d-viewer.js` | `js/3d-viewer.js` |
+| `galaxy.js` | `js/galaxy.js` |
+| `grid-distortion.js` | `js/grid-distortion.js` |
+| `logo-lab-viewer.js` | `js/logo-lab-viewer.js` |
+| `main.js` | `js/main.js` |
+| `page-enter-vfx.js` | `js/page-enter-vfx.js` |
+| `page-transition-v1.js` | `js/page-transition-v1.js` |
+| `page-transition-v4.js` | `js/page-transition-v4.js` |
+| `page-transition-v4x62.js` | `js/page-transition-v4x62.js` |
+| `page-transition-v5.js` | `js/page-transition-v5.js` |
+| `page-transition.js` | `js/page-transition.js` |
+| `temp_v20.js` | `js/temp_v20.js` |
+
+**[搬移] 圖片**
+
+| 原路徑 | 新路徑 |
+|--------|--------|
+| `screen.png`（根目錄孤立檔）| `images/screen.png` |
+
+**[路徑修正] css/style.css 內部引用**
+- `fonts/Anson.ttf` → `../fonts/Anson.ttf`
+- `images/games_lab_coming_soon.png` → `../images/games_lab_coming_soon.png`
+
+**[路徑修正] js/page-transition-v4.js**
+- `images/system_page.png` → `../images/system_page.png`（第 173 行）
+
+**[路徑修正] js/temp_v20.js**
+- `images/system_page.png` → `../images/system_page.png`
+
+**[HTML 路徑更新]**
+- `brand.html`、`experiment-houdini.html`、`experiment.html`、`games.html`、
+  `glass_test.html`、`glass_test_v1.html`、`index.html`、`logo-lab.html`、`project.html`
+  — 全部 `src`/`href` 引用更新至新路徑（`css/`、`js/`）
+
+**[已知遺留問題]（不在本次範疇）**
+- `images/games_lab_coming_soon.png` 檔案不存在，style.css 中的引用為死路徑
+- `finished.html` 被 index.html 引用但不存在於根目錄
+- `videos/` 目錄被 3d_lab.html 引用，需確認實際部署位置
+
+**Commit：** `ce10a6e` — `refactor: reorganize directory structure into css/ js/ images/`
+
+---
+
 ## 2026-04-20 (2)
 
 ### [27] page-enter-vfx.js — 新增獨立的 PixiJS 光學折射入場波紋
