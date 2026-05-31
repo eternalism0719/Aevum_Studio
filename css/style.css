@@ -1,11 +1,11 @@
-/* ============================================================
+﻿/* ============================================================
    AINA VISUALS — PORTFOLIO DESIGN SYSTEM v3.0
    ============================================================ */
 
 /* ------ Fonts ------ */
 @font-face {
     font-family: 'Anson';
-    src: url('fonts/Anson.ttf') format('truetype');
+    src: url('../fonts/Anson.ttf') format('truetype');
 }
 
 /* ------ CSS Variables ------ */
@@ -2414,7 +2414,7 @@ h1.large-title {
 .games-vault-bg {
     position: absolute;
     inset: 0;
-    background: url('images/games_lab_coming_soon.png') center/cover no-repeat;
+    background: url('../images/games_lab_coming_soon.png') center/cover no-repeat;
     opacity: 0.45;
     filter: blur(2px) saturate(0.8);
 }
