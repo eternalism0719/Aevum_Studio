@@ -11,10 +11,12 @@ yarn-error.log*
 # ── Python 虛擬環境 ───────────────────────────────────────────
 .venv/
 venv/
-__pycache__/
+**/__pycache__/
 *.pyc
+*.pyo
 
 # ── AI / IDE 工具設定目錄 ─────────────────────────────────────
+.github/
 .agent/
 .agents/
 .claude/
