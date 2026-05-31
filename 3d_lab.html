@@ -1,0 +1,2929 @@
+<!-- 
+================================================================================
+CHANGE LOG & VERSION HISTORY
+================================================================================
+[Date]: 2026-05-20 (修復 PBR 貼圖與材質渲染)
+[Author]: Antigravity
+[Scope]: c:\Users\User\Desktop\光孚作品集\portfolio\3d_lab.html
+
+--------------------------------------------------------------------------------
+【版本變更紀錄】：修復 PBR 貼圖在方塊與 LOGO 模型上不顯示之 Bug (防禦性材質重建與巨集安全編譯)
+--------------------------------------------------------------------------------
+1. 面臨問題：
+   - 使用者反應「目前的方塊顯示中感覺 roughness.normal 那些都沒有，在 LOGO 展示的部分更沒看到 basecolor 呈現」。
+   - 原因在於 Three.js 渲染管線的快取與巨集編譯機制：
+     * 當方塊（`previewMeshes`）與 LOGO 模型（`mainModel`）在初次建立材質時，其 `map`、`roughnessMap`、`normalMap` 皆為 null。
+     * 這導致 Three.js 在初次編譯 Shader 時，沒有把 `USE_MAP`、`USE_ROUGHNESSMAP`、`USE_NORMALMAP` 等巨集（Macros）編譯進去。
+     * 後續動態指派貼圖並調用 `needsUpdate = true` 時，在部分邊界條件下無法順利觸發 Three.js 內部重新生成含有貼圖分支的著色器，使得貼圖完全無法在畫面上呈現。
+
+2. 具體改動內容：
+   - 【LOGO 材質防禦性重建】：
+     * 在 `applyCurrentParamsToModel` 函式中，為 `child.material.userData` 引入 `presetKey`。
+     * 當 `currentTransitionPresetKey` 切換（即 Preset 發生改變）時，若目標 preset 為需要貼圖的 `ROCK_MOSS` 或 `WOOD`，我們不沿用舊材質，而是強制重建 `MeshPhysicalMaterial`，並直接在 constructor 參數中配置好 `map`、`roughnessMap`、`normalMap` 等屬性。
+     * 這能 100% 強制 Three.js 編譯出正確包含 PBR 貼圖支持的 Shader，並徹底解決 `basecolor` 不顯示與法線細節消失的問題。
+     * 同時，若是非 preset切換（僅為 Tweakpane 參數微調），則依舊沿用材質，以維持互動時的最高流暢度與效能平衡。
+   - 【方塊材質重建】：
+     * 在 `updatePreviewMaterials()` 中，當 `ROCK_MOSS` 或 `WOOD` 的貼圖非同步載入完成後，若發現該展示方塊尚未指派貼圖（`map` 仍為空），則主動重建該方塊的 `MeshPhysicalMaterial`，將載入完成的貼圖直接傳入 constructor，確保方塊也能正確渲染出凹凸與粗糙細節。
+
+3. 改動程式碼對比：
+   - [updatePreviewMaterials 函式 (約 1660-1680 行)]：
+     * 替換：不直接動態賦值，改為偵測到貼圖加載完後防禦性重建 `MeshPhysicalMaterial`。
+   - [applyCurrentParamsToModel 函式 (約 1327-1414 行)]：
+     * 新增：`presetKey` 偵測與 `hasPresetChanged` 判斷。
+     * 替換：在 preset 改變時，Physical 材質不再走沿用分支，而是防禦性重新實例化 `MeshPhysicalMaterial`。
+
+--------------------------------------------------------------------------------
+[Date]: 2026-05-20
+[Author]: Antigravity
+[Scope]: c:\Users\User\Desktop\光孚作品集\portfolio\3d_lab.html
+
+--------------------------------------------------------------------------------
+【版本變更紀錄】：將 3D PBR 貼圖全面升級為 8-bit 1024x1024 高效能 PNG，並優化加載效能
+--------------------------------------------------------------------------------
+1. 面臨問題：
+   - 原始使用 4K .exr 與 4K .jpg 貼圖，導致檔案大小極其龐大，造成瀏覽器載入時間過長、VRAM 顯示記憶體嚴重耗損，甚至可能造成低配備設備或行動裝置的 WebGL 崩潰。
+   - 且 .exr 貼圖的 32-bit/16-bit 浮點數格式在 WebGL 著色器中若未妥善對應標準 LDR 解碼，容易產生平坦、無細節、或是法線解碼異常的視覺錯誤。
+
+2. 具體改動內容：
+   - 【貼圖載入器與格式重構】：
+     * 將 `ROCK_MOSS` 的貼圖路徑改為轉換後的 1024x1024 PNG 貼圖：
+       - Base Color (map): `./3D_shader/rock_moss/rock_moss_base_color.png`
+       - Roughness (roughnessMap): `./3D_shader/rock_moss/rock_moss_rough.png`
+       - Normal (normalMap): `./3D_shader/rock_moss/rock_moss_normal.png`
+     * 將 `WOOD` 的貼圖路徑改為轉換後的 1024x1024 PNG 貼圖：
+       - Base Color (map): `./3D_shader/wood/wood_base_color.png`
+       - Roughness (roughnessMap): `./3D_shader/wood/wood_rough.png`
+       - Normal (normalMap): `./3D_shader/wood/wood_normal.png`
+     * 因為所有的貼圖均已轉換為 8-bit PNG 格式，因此將原本用來加載 .exr 的 `exrLoader.load` 全部更改為標準且高效的 `texLoader.load`。
+     * 大幅簡化了 PBR 貼圖的加載邏輯，使載入與解析速度獲得顯著的效能提升。
+
+3. 改動程式碼對比：
+   - [loadPBRTextures 函式 (約 1652-1706 行)]：
+     * 將所有的 `exrLoader.load` 更改為 `texLoader.load`。
+     * 將原先 4K .jpg 與 4K .exr 的貼圖路徑，替換為 1024 .png 路徑。
+
+--------------------------------------------------------------------------------
+[Date]: 2026-05-19
+[Author]: Antigravity
+[Scope]: c:\Users\User\Desktop\光孚作品集\portfolio\3d_lab.html
+
+--------------------------------------------------------------------------------
+【版本變更紀錄】：修復 LOGO 載入初始縮放與居中偏移被意外覆寫之 Bug (防止位置與大小跑位)
+--------------------------------------------------------------------------------
+1. 面臨問題：
+   - 使用者反應「LOGO的位置和大小被意外改到了」。
+   - 原因在於 LOGO 模型（`mainModel`）在加載 GLB 時，如果 `isCustom` 為 true，會計算出一個合適的自適應縮放係數 `scale` 並調用 `setScalar(scale)` 以及居中位置偏移 `sub(center.multiplyScalar(scale))`。
+   - 然而，在先前的自訂轉場重構中，在非轉場狀態的重置分支，以及方案 A（WATER）、方案 C（HOLO）的渲染段落，硬編碼使用了 `mainModel.scale.set(1.0, 1.0, 1.0)`。
+   - 在方案 B（METAL）的縮放插值計算中，也是基於 `1.0` 作為縮放比例，在轉場重置時直接將縮放強制歸位為 `1.0`。
+   - 這直接覆蓋並摧毀了 LOGO 載入時的自適應縮放比例，也因為縮放比例的破壞，導致視覺上的投影大小與置中偏移量完全失衡。
+
+2. 具體改動內容：
+   - 【模型載入邏輯優化】：
+     * 在加載 `mainModel` 的 traverse 區塊（約 1675-1685 行），將加載/置中計算完畢後的最終縮放比例 `mainModel.scale.x` 儲存為 `mainModel.userData.originScale`。
+     * 同時將置中偏移後的完整初始三維坐標複製儲存為 `mainModel.userData.originPosition = mainModel.position.clone()`，作為全生命週期的絕對坐標防跑位基準。
+   - 【防跑位安全鎖】：
+     * 在 `animate()` 浮動動畫區塊（約 1970 行左右），新增防跑位鎖：強制將 `mainModel.position.x` 與 `mainModel.position.z` 鎖定在 `originPosition` 的初始值上，杜絕任何外界操作或渲染變形導致 X/Z 軸坐標偏離。
+   - 【轉場縮放邏輯重構】：
+     * 在方案 A (WATER) 的 scale 還原點，將 `scale.set(1.0, 1.0, 1.0)` 改為 `scale.setScalar(mainModel.userData.originScale || 1.0)`。
+     * 在方案 B (METAL) 的縮放插值計算中，將插值基數乘以 `origS`（`const s = THREE.MathUtils.smoothstep(scaleVal, 0.0, 1.0) * origS`），並使用 `scale.setScalar(s)`，保證縮放精準回到初始載入比例。
+     * 在方案 C (HOLO) 的 scale 還原點，將 `scale.set(1.0, 1.0, 1.0)` 改為 `scale.setScalar(mainModel.userData.originScale || 1.0)`。
+     * 在非轉場重置狀態下，將 `scale.set(1.0, 1.0, 1.0)` 改為 `scale.setScalar(mainModel.userData.originScale || 1.0)`。
+
+3. 改動程式碼對比：
+   - [GLB 載入區塊 (約 1675-1685 行)]：
+     + 新增：`mainModel.userData.originScale` 與 `mainModel.userData.originPosition` 的初始化儲存。
+   - [animate 浮動動畫區塊 (約 1968-1975 行)]：
+     + 新增：鎖定 X 與 Z 軸坐標至原始加載位置的防護邏輯。
+   - [animate 轉場與重置區塊 (約 2025-2355 行)]：
+     + 替換：方案 A、C 以及非轉場狀態下，所有的 `mainModel.scale.set(1.0, 1.0, 1.0)` 皆改為 `mainModel.scale.setScalar(origS)`。
+     + 替換：方案 B 中，縮放插值計算改乘以 `origS` 以作為縮放比例基底。
+
+--------------------------------------------------------------------------------
+[Date]: 2026-05-18
+[Author]: Antigravity
+[Scope]: c:\Users\User\Desktop\光孚作品集\portfolio\3d_lab.html
+
+--------------------------------------------------------------------------------
+【版本變更紀錄】：材質自訂轉場特效物理化與粒子系統重構
+--------------------------------------------------------------------------------
+1. 面臨問題：
+   - 舊版轉場動畫的粒子效果過於單一，主要是簡單的向上飄散或預設收縮，無法突顯 Water、Metal 與 Holo 的獨特材質屬性與高擬真視覺質感。
+   - 三種轉場方案（方案 A、方案 B、方案 C）的頂點著色器數值與粒子物理模型不夠精確，轉場時缺乏震撼的視覺張力與無縫銜接感。
+
+2. 具體改動內容：
+   - 【Water (方案 A)】：
+     * 將轉場 Preset 定義為 0.0。
+     * 設定頂點水波起伏動畫，使 `sharedDistortion.value` 與溶解進度 `sharedDissolve.value` 同步在前半段（0.0 -> 0.5）緩緩升起，並在後半段（0.5 -> 1.0）順滑降下。
+     * 將粒子重構為冰藍色水花粒子，並在 `animate()` 中模擬精確的螺旋上升物理軌跡。半徑在轉場中段（0.5）收緊以集中視覺，並在頂部自然發散，大幅強化水之流動美感。
+   - 【Metal (方案 B)】：
+     * 將轉場 Preset 定義為 1.0。
+     * 導入「阻尼打鐵震波物理模型」，在 `transitionProgress < 0.5` 時畸變微幅升溫（0.0 -> 0.25）；當進度到達臨界敲擊點 `0.5` 的瞬間，畸變數值 `sharedDistortion.value` 瞬間暴增至 1.5，並隨後採用 `Amp * e^(-damping * t) * cos(freq * t)` 物理公式進行高頻阻尼衰減震盪，完美模擬高溫鍛造敲擊與急速冷凝效果。
+     * 在卡片點擊監聽器（1657 行起）中，為 METAL 材質初始化專屬粒子，使其在點擊瞬間以高速向外飛濺。
+     * 粒子重構為高溫火花（金黃至暗紅漸變），並在 `animate()` 中加入重力加速度（`data.vy -= 0.0022`）與空氣阻力（`0.96` 衰減），在 `0.5` 臨界點爆發二次猛烈飛濺，逼真還原鐵砧鍛造火花下墜效果。
+   - 【Holo (方案 C)】：
+     * 將轉場 Preset 定義為 2.0。
+     * 全息消融高度 `holoVal` 改為前半段由下往上消融（-2.0 -> 2.0），後半段由上往下重構（2.0 -> -2.0）。
+     * 粒子重構為霓虹極光青藍色，在消融掃描邊界 `holoVal` (±0.2) 處動態生成，筆直向上蒸發，並在 X/Z 軸上疊加高頻正弦波抖動（模擬全息數位噪訊與干擾訊號感），生命結束後自動回到當前掃描線重新蒸發，達成無縫的數位轉場視覺效果。
+   - 【程式安全】：
+     * 保留所有非轉場狀態下的重置邏輯，並確保插值系統在沒有材質時的安全邊界。
+
+3. 改動程式碼對比：
+   - [卡片點擊監聽器更新 (約 1715-1730 行)]：
+     + 新增：針對 METAL 鍛造方案，在點擊瞬間初始化粒子的高速飛濺初速度與狀態。
+   - [animate 渲染循環更新 (約 1980-2265 行)]：
+     + 替換：方案 A (WATER) 頂點畸變更新與螺旋冰藍粒子上升運動方程式。
+     + 替換：方案 B (METAL) 阻尼衰減畸變模型與帶重力/空氣阻力的金黃火花下墜物理方程式.
+     + 替換：方案 C (HOLO) 掃描線消融生成高度判定與全息數位干擾抖動蒸發運動方程式。
+================================================================================
+-->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Lab - Aevum Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* CSS 變數定義 (深淺色主題) */
+        :root {
+            /* 字體定義 */
+            --font-headline: 'Space Grotesk', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+
+            /* 深色模式 (預設) */
+            --bg-color: #050508;
+            --text-color: #ffffff;
+            --text-dim: rgba(255, 255, 255, 0.6);
+            --panel-bg: rgba(15, 23, 42, 0.4);
+            --panel-border: rgba(255, 255, 255, 0.1);
+            --accent-color: #00f3ff;
+            --accent-glow: rgba(0, 243, 255, 0.8);
+            --input-bg: rgba(0, 0, 0, 0.2);
+            --showcase-bg: #0a0a0e;
+            --nav-bg: rgba(5, 5, 10, 0.7);
+        }
+
+        [data-theme="light"] {
+            /* 淺色模式 - 優化配色 */
+            --bg-color: #f8fafc;
+            --text-color: #0f172a;
+            --text-dim: #64748b;
+            --panel-bg: rgba(255, 255, 255, 0.8);
+            --panel-border: rgba(15, 23, 42, 0.08);
+            --accent-color: #0ea5e9;
+            --accent-glow: rgba(14, 165, 233, 0.4);
+            --input-bg: rgba(0, 0, 0, 0.05);
+            --showcase-bg: #f1f5f9;
+            --nav-bg: rgba(255, 255, 255, 0.8);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-body);
+            transition: background-color 0.5s ease, color 0.5s ease;
+            width: 100vw;
+            position: relative;
+        }
+
+        /* 頂部 Hero 區塊 (包含 3D 與左側 UI) */
+        #hero-section {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #bg-image-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            /* 背景圖移至此處，並套用濾鏡消除灰霧感 */
+            background-image: url('./3D_reference/3D_lab_black_BG.png');
+            background-size: cover;
+            background-position: center;
+            transition: background-image 0.5s ease;
+            filter: contrast(1.2) brightness(1.1) saturate(1.2);
+        }
+
+        [data-theme="light"] #bg-image-layer {
+            background-image: url('./3D_reference/3D_lab_white_BG.png');
+            filter: none; /* 亮色版通常不需要去灰霧 */
+        }
+
+        /* 3D 畫布 (滿版) */
+        #canvas-container {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
+            pointer-events: auto; /* 允許與 3D 互動 */
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 背景星空影片層 (在背景圖前方，右側空白處) */
+        #video-bg-container {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 35vw; /* 往右切一點，減少寬度 */
+            height: 100vh;
+            z-index: 2; /* 在背景圖之前，維持在轉場影片後方以配合 Alpha 通道 */
+            overflow: hidden;
+            mask-image: linear-gradient(to right, transparent, black 40%);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 40%);
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        /* 玻璃折射層：蓋在影片上方，製造玻璃反光與微折射質感 */
+        #video-bg-container::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 3;
+            /* 模擬玻璃折射：提升亮度/對比 (無模糊) */
+            backdrop-filter: brightness(1.15) contrast(1.05);
+            -webkit-backdrop-filter: brightness(1.15) contrast(1.05);
+            /* 玻璃表面的反光漸層 */
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%, rgba(0, 0, 0, 0.1) 100%);
+            /* 玻璃邊緣的高光厚度感 */
+            box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.15), inset -1px -1px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        [data-theme="light"] #video-bg-container {
+            z-index: 0; /* Light mode 影片在白色背景 PNG (z-index:1) 後面，從透明區域透出 */
+        }
+        
+        .bg-video-layer {
+            position: absolute;
+            transition: opacity 0.5s ease;
+        }
+
+        /* Dark mode 預設顯示，設為 0.8，z-index 較高以覆蓋在 light 影片之上 */
+        #bg-video-dark {
+            opacity: 0.8;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Light mode 影片含在後面，預設隱藏 */
+        #bg-video-light {
+            opacity: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        [data-theme="light"] #bg-video-dark {
+            opacity: 0 !important;
+        }
+
+        [data-theme="light"] #bg-video-light {
+            opacity: 1 !important; /* Light mode 影片不壓透明度，100% */
+        }
+
+        [data-theme="light"] #video-bg-container::after {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 40%, rgba(0, 0, 0, 0.05) 100%);
+            box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.4), inset -1px -1px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        /* 左側霧面玻璃面板 (浮空儀表板風格) */
+        #left-panel {
+            position: absolute;
+            left: 30px;
+            top: 100px;
+            bottom: 30px;
+            width: 360px;
+            background: var(--panel-bg); 
+            backdrop-filter: blur(30px) saturate(1.5);
+            -webkit-backdrop-filter: blur(30px) saturate(1.5);
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            z-index: 20;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.6);
+            pointer-events: auto;
+        }
+
+        .panel-header {
+            padding: 30px;
+            border-bottom: 1px solid var(--panel-border);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .panel-content {
+            padding: 25px 30px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        [data-theme="light"] #left-panel {
+            box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.15);
+        }
+
+        /* 下方延伸展示櫃區塊 (Scrollable) */
+        #showcase-section {
+            width: 100%;
+            min-height: 100vh;
+            position: relative;
+            z-index: 20;
+            padding: 100px 40px;
+            box-sizing: border-box;
+            background: linear-gradient(to bottom, transparent, var(--bg-color) 40%),
+                        radial-gradient(circle at 15% 50%, rgba(0, 210, 255, 0.06) 0%, transparent 50%),
+                        radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.06) 0%, transparent 50%),
+                        var(--bg-color);
+            pointer-events: auto;
+        }
+        
+        [data-theme="light"] #showcase-section {
+            background: linear-gradient(to bottom, transparent, var(--bg-color) 40%),
+                        radial-gradient(circle at 15% 50%, rgba(14, 165, 233, 0.04) 0%, transparent 50%),
+                        radial-gradient(circle at 85% 30%, rgba(168, 85, 247, 0.04) 0%, transparent 50%),
+                        var(--bg-color);
+        }
+
+        /* 內部網格佈局 */
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        /* 展示卡片 */
+        .showcase-card {
+            height: 380px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-bottom-color: rgba(255, 255, 255, 0.04);
+            border-right-color: rgba(255, 255, 255, 0.04);
+            border-radius: 24px;
+            backdrop-filter: blur(35px) saturate(120%);
+            -webkit-backdrop-filter: blur(35px) saturate(120%);
+            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 24px;
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15), 0 15px 35px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .transition-lock {
+            pointer-events: none !important;
+            opacity: 0.5;
+            cursor: not-allowed !important;
+        }
+
+        [data-theme="light"] .showcase-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.95) 100%);
+            border: 1px solid rgba(15, 23, 42, 0.08);
+            border-bottom-color: rgba(15, 23, 42, 0.03);
+            border-right-color: rgba(15, 23, 42, 0.03);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9), 0 15px 35px -5px rgba(15, 23, 42, 0.05);
+        }
+
+        .card-preview {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            bottom: 95px;
+            border-radius: 16px;
+            overflow: hidden;
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.02) 0%, rgba(0, 0, 0, 0.4) 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.3);
+            pointer-events: none; /* 讓點擊穿透至卡片本體 */
+            transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        [data-theme="light"] .card-preview {
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.9) 0%, rgba(15, 23, 42, 0.02) 100%);
+            border: 1px solid rgba(15, 23, 42, 0.02);
+        }
+
+        .card-preview canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .showcase-card:hover .card-preview canvas {
+            transform: scale(1.1);
+        }
+
+        .card-status-line {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 6px;
+            z-index: 5;
+        }
+
+        .card-status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.12);
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+            box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+        }
+
+        .showcase-card:hover .card-status-dot {
+            background: var(--card-accent);
+            box-shadow: 0 0 8px var(--card-accent);
+        }
+
+        .showcase-card.active .card-status-dot {
+            background: var(--card-accent);
+            box-shadow: 0 0 10px var(--card-accent), 0 0 20px var(--card-accent-glow);
+            animation: pulse-dot 1.8s infinite alternate;
+        }
+
+        @keyframes pulse-dot {
+            0% { transform: scale(1.0); opacity: 0.8; }
+            100% { transform: scale(1.3); opacity: 1.0; }
+        }
+
+        .card-info {
+            position: relative;
+            z-index: 5;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .card-id {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            color: var(--card-accent);
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            opacity: 0.9;
+        }
+
+        .card-name {
+            font-family: var(--font-headline);
+            font-size: 1.0rem;
+            color: var(--text-color);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: color 0.3s ease;
+        }
+
+        .card-spec {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            color: var(--text-dim);
+            opacity: 0.65;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+            transition: all 0.4s ease;
+        }
+
+        .showcase-card:hover .card-spec,
+        .showcase-card.active .card-spec {
+            opacity: 1.0;
+            color: var(--text-color);
+        }
+
+        [data-theme="light"] .upload-card {
+            border: 1px dashed rgba(15, 23, 42, 0.15) !important;
+            background: rgba(255, 255, 255, 0.5) !important;
+        }
+
+        /* Active / Hover 狀態的高級視覺反饋 */
+        .showcase-card:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 100%);
+            border-color: var(--card-accent);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.25), 0 0 20px var(--card-accent-glow), 0 20px 45px -10px rgba(0, 0, 0, 0.6);
+            transform: translateY(-8px);
+        }
+
+        .showcase-card:hover .card-preview {
+            transform: translateY(-3px);
+            background: radial-gradient(circle at center, var(--card-accent-glow) 0%, rgba(0,0,0,0.4) 100%);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .showcase-card.active {
+            border-color: var(--card-accent);
+            background: linear-gradient(135deg, var(--card-accent-glow) 0%, rgba(255, 255, 255, 0.05) 100%);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3), 0 0 25px var(--card-accent-glow), 0 20px 45px -10px rgba(0, 0, 0, 0.6);
+            transform: translateY(-4px);
+        }
+
+        [data-theme="light"] .showcase-card:hover {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 1.0) 100%);
+            border-color: var(--card-accent);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.95), 0 0 15px var(--card-accent-glow), 0 15px 35px -10px rgba(15, 23, 42, 0.08);
+            transform: translateY(-8px);
+        }
+
+        [data-theme="light"] .showcase-card:hover .card-preview {
+            transform: translateY(-3px);
+            background: radial-gradient(circle at center, rgba(255, 255, 255, 0.95) 0%, var(--card-accent-glow) 100%);
+        }
+
+        [data-theme="light"] .showcase-card.active {
+            border-color: var(--card-accent);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 1.0) 100%);
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 1.0), 0 0 20px var(--card-accent-glow), 0 12px 30px -10px rgba(15, 23, 42, 0.08);
+            transform: translateY(-4px);
+        }
+
+        /* 主題切換器 (Switcher Trap) */
+        .theme-switcher {
+            position: fixed; /* 改為 fixed，滾動時保持在畫面上 */
+            top: 40px;
+            right: 40px;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: rgba(15, 23, 42, 0.6);
+            padding: 8px 16px;
+            border-radius: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: all 0.3s ease;
+        }
+
+        [data-theme="light"] .theme-switcher {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-switcher.transition-lock {
+            pointer-events: none !important;
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .theme-switcher.transition-lock .switch-trap {
+            cursor: not-allowed;
+        }
+
+        .switch-trap {
+            width: 50px;
+            height: 26px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 30px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        [data-theme="light"] .switch-trap {
+            background: rgba(0, 0, 0, 0.1);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .switch-trap::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        [data-theme="light"] .switch-trap::after {
+            transform: translateX(24px);
+        }
+
+        /* 轉場用全螢幕背景影片容器 */
+        #transition-video-container {
+            position: absolute;
+            inset: 0;
+            z-index: 8; /* 提高 z-index，放在畫布(10)之下，但高於其他背景(5) */
+            pointer-events: none;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .transition-bg-video {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.1s ease; /* 縮短漸變時間，幾乎瞬間出現 */
+        }
+
+        .transition-bg-video.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* 標題與基礎樣式 */
+        /* 標題與基礎樣式 */
+        .lab-title-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .lab-id {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--accent-color);
+            letter-spacing: 2px;
+            font-weight: 700;
+        }
+
+        h1 {
+            font-family: var(--font-headline);
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 0;
+            color: var(--text-color);
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        .lab-description {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: var(--text-dim);
+            font-family: var(--font-body);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            margin-top: 10px;
+        }
+
+        .section-title {
+            font-family: var(--font-headline);
+            font-size: 0.65rem;
+            color: var(--text-color);
+            letter-spacing: 0.2rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .section-line {
+            flex: 1;
+            height: 1px;
+            background: var(--panel-border);
+        }
+
+        p {
+            font-family: var(--font-body);
+            color: var(--text-dim);
+            line-height: 1.6;
+            font-size: 0.9rem;
+        }
+
+        /* --- Topbar Component CSS --- */
+        .glass-nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 0.8rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--nav-bg);
+            backdrop-filter: blur(20px) saturate(1.4);
+            -webkit-backdrop-filter: blur(20px) saturate(1.4);
+            border-bottom: 1px solid var(--panel-border);
+            z-index: 2005;
+            transition: all 0.4s;
+            box-sizing: border-box;
+        }
+
+        .glass-nav.scrolled {
+            background: rgba(5, 5, 10, 0.92);
+            box-shadow: 0 4px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        body[data-theme="light"] .glass-nav {
+            background: rgba(255, 255, 255, 0.7);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        body[data-theme="light"] .glass-nav.scrolled {
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 4px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-left-wrap {
+            display: flex;
+            align-items: center;
+            gap: 2.5rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-family: 'Anson', sans-serif;
+            font-size: 1.36rem;
+            font-weight: 500;
+            color: #ffffff;
+            letter-spacing: 8px;
+            position: relative;
+            gap: 14px;
+            text-decoration: none;
+        }
+
+        body[data-theme="light"] .logo {
+            color: #000000;
+        }
+
+        .logo-img {
+            height: 32px;
+            width: auto;
+            filter: drop-shadow(0 0 12px rgba(0, 243, 255, 0.5));
+        }
+
+        .logo span {
+            color: #00f3ff;
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+        }
+
+        body[data-theme="light"] .logo span {
+            color: #0077ff;
+            text-shadow: none;
+        }
+
+        .logo-pulse {
+            width: 6px; height: 6px;
+            background: #00f3ff;
+            border-radius: 50%;
+            margin-left: 4px;
+            box-shadow: 0 0 8px #00f3ff;
+            animation: logoPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes logoPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.4; transform: scale(0.6); }
+        }
+
+        #nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            color: #b0b0cc;
+            letter-spacing: 3px;
+            font-weight: 600;
+            position: relative;
+            padding: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: color 0.3s;
+            text-decoration: none;
+        }
+
+        body[data-theme="light"] .nav-link {
+            color: #555577;
+        }
+
+        .nav-dot {
+            width: 4px; height: 4px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid #666680;
+            transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+            flex-shrink: 0;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px; left: 12px; right: 0;
+            height: 1px;
+            background: #00f3ff;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease-out;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: #ffffff;
+        }
+
+        body[data-theme="light"] .nav-link:hover, body[data-theme="light"] .nav-link.active {
+            color: #000000;
+        }
+
+        .nav-link:hover .nav-dot, .nav-link.active .nav-dot {
+            background: #00f3ff;
+            border-color: #00f3ff;
+            box-shadow: 0 0 8px #00f3ff;
+        }
+
+        .nav-link:hover::after, .nav-link.active::after {
+            transform: scaleX(1);
+        }
+
+        .nav-link.active {
+            color: #00f3ff;
+            text-shadow: 0 0 8px rgba(0, 243, 255, 0.1);
+        }
+        body[data-theme="light"] .nav-link.active {
+            color: #0077ff;
+            text-shadow: none;
+        }
+        /* --- End Topbar CSS --- */
+
+        :root {
+            --user-color: #ffffff; /* 跟隨 color picker 即時更新 */
+        }
+
+        /* 專屬拉桿樣式覆寫 */
+        .custom-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 2px;
+            outline: none;
+        }
+        [data-theme="light"] .custom-slider {
+            background: rgba(15, 23, 42, 0.1);
+        }
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            background: var(--user-color);
+            box-shadow: 0 0 6px var(--user-color);
+            cursor: pointer;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+        [data-theme="light"] .custom-slider::-webkit-slider-thumb {
+            background: var(--user-color);
+            box-shadow: 0 0 6px var(--user-color);
+        }
+        .custom-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            background: var(--user-color);
+            box-shadow: 0 0 6px var(--user-color);
+            cursor: pointer;
+            border: none;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+        [data-theme="light"] .custom-slider::-moz-range-thumb {
+            background: var(--user-color);
+            box-shadow: 0 0 6px var(--user-color);
+        }
+
+        .custom-number-input {
+            width: 45px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: var(--text-color);
+            text-align: right;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            padding: 2px 4px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .custom-number-input:focus {
+            border-color: var(--accent-color);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        [data-theme="light"] .custom-number-input {
+            background: rgba(15, 23, 42, 0.05);
+            border-color: rgba(15, 23, 42, 0.1);
+        }
+        [data-theme="light"] .custom-number-input:focus {
+            background: rgba(15, 23, 42, 0.08);
+        }
+        .custom-number-input::-webkit-outer-spin-button,
+        .custom-number-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .custom-number-input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        /* 避免 input color 外框 */
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        input[type="color"]::-webkit-color-swatch {
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+        /* 隱藏 number input 上下箭頭 */
+        .hide-arrows::-webkit-outer-spin-button,
+        .hide-arrows::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .hide-arrows[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <!-- Aevum Studio Shared Topbar Component -->
+    <header class="glass-nav" id="main-nav">
+        <div class="nav-left-wrap">
+            <a href="index.html" class="logo" aria-label="Aevum Studio Home">
+                <img src="images/LOGO_pj_BG.png" alt="" class="logo-img">
+                AEVUM <span>STUDIO</span>
+                <div class="logo-pulse"></div>
+            </a>
+        </div>
+        
+        <nav id="nav-links" aria-label="Main navigation">
+            <a href="project.html" class="nav-link bh-transition"><div class="nav-dot"></div>PROJECT</a>
+            <a href="brand.html" class="nav-link"><div class="nav-dot"></div>BRAND</a>
+            <a href="3d_lab.html" class="nav-link active"><div class="nav-dot"></div>EXPERIMENT</a>
+            <a href="games.html" class="nav-link"><div class="nav-dot"></div>GAMES</a>
+        </nav>
+    </header>
+
+    <!-- 主題切換器 (固定於右上) -->
+    <div class="theme-switcher" style="top: 100px;"> <!-- 向下推移，避免被導覽列遮擋 -->
+        <span class="label-dark">DARK</span>
+        <div class="switch-trap" id="theme-toggle"></div>
+        <span class="label-light">LIGHT</span>
+    </div>
+
+    <!-- 首屏區域 (100vh) -->
+    <div id="hero-section">
+        <div id="bg-image-layer"></div>
+        <!-- 轉場背景影片 -->
+        <div id="transition-video-container">
+            <!-- 從 Dark 變 Light 的影片 -->
+            <video id="vid-bg-b2w" class="transition-bg-video" src="./videos/web_switcher/website_themetrans_blacktowhite.webm" muted playsinline preload="auto"></video>
+            <!-- 從 Light 變 Dark 的影片 -->
+            <video id="vid-bg-w2b" class="transition-bg-video" src="./videos/web_switcher/website_themetrans_whitetoblack.webm" muted playsinline preload="auto"></video>
+        </div>
+
+        <!-- 左側面板 -->
+        <div id="left-panel">
+            <div class="panel-header" style="border-bottom: none; background: transparent; padding-bottom: 5px;">
+                <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-color); font-weight: 700; letter-spacing: 1.5px; margin-bottom: 6px; display: inline-flex; flex-direction: column;">
+                    EXP_SYS / V5.2
+                    <div style="width: 25px; height: 2px; background-color: var(--accent-color); margin-top: 5px;"></div>
+                </div>
+                
+                <h1 style="font-family: var(--font-headline); font-size: 2.2rem; font-weight: 700; letter-spacing: -1.0px; margin: 15px 0 0 0; line-height: 1.1; color: var(--text-color); white-space: nowrap;">
+                    Lightscape Gallery
+                </h1>
+                
+                <div style="width: 50px; height: 2px; background: linear-gradient(90deg, var(--accent-color), transparent); margin-top: 15px; box-shadow: 0 0 10px var(--accent-glow);"></div>
+                
+                <div style="font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); letter-spacing: 3px; margin-top: 25px; font-weight: 600;">
+                    LIGHT.&nbsp;&nbsp;MATERIAL.&nbsp;&nbsp;CONTROL.
+                </div>
+            </div>
+            
+            <div class="panel-content" style="padding-top: 10px;">
+                <div style="padding: 10px 5px;">
+                    <!-- Header -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; color: var(--accent-color);"><path d="M4 21v-7"/><path d="M4 10V3"/><path d="M12 21v-9"/><path d="M12 8V3"/><path d="M20 21v-5"/><path d="M20 12V3"/><path d="M1 14h6"/><path d="M9 8h6"/><path d="M17 16h6"/></svg>
+                            <div style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; letter-spacing: 1.5px; color: var(--text-color); white-space: nowrap;">CONTROL TERMINAL</div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <!-- Heartbeat icon -->
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-color);"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                            <!-- Reset icon -->
+                            <svg id="ctrl-reset-btn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer; transition: color 0.3s; color: var(--text-dim);" onmouseover="this.style.color='var(--accent-color)'" onmouseout="this.style.color='var(--text-dim)'"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                            <!-- Chevron down -->
+                            <svg id="ctrl-toggle-btn" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer; transition: transform 0.3s; color: var(--text-dim);"><path d="M6 9l6 6 6-6"/></svg>
+                        </div>
+                    </div>
+                    
+                    <div id="material-ui-container">
+                        <!-- Title Bar -->
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                            <div style="width: 3px; height: 16px; background: var(--accent-color);"></div>
+                            <div style="font-family: var(--font-body); font-size: 15px; color: var(--text-color); font-weight: 500;">Glass Properties</div>
+                        </div>
+
+                        <!-- Custom UI -->
+                        <div style="display: flex; flex-direction: column; gap: 14px;">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); width: 100px;">color</div>
+                                <div style="flex: 1; display: flex; align-items: center; gap: 8px; background: var(--input-bg); padding: 4px; border-radius: 4px;">
+                                    <input type="color" id="ctrl-color" value="#ffffff" style="width: 16px; height: 16px; border: none; cursor: pointer; padding: 0; background: transparent;">
+                                    <span id="ctrl-color-text" style="font-family: var(--font-mono); font-size: 11px; color: var(--text-color); letter-spacing: 0.5px;">#ffffff</span>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); width: 100px;">transmission</div>
+                                <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                                    <input type="range" id="ctrl-transmission" min="0" max="1" step="0.01" value="1.0" class="custom-slider" style="flex: 1;">
+                                    <div style="width: 1px; height: 12px; background: var(--panel-border);"></div>
+                                    <input type="number" id="ctrl-transmission-val" value="1.00" step="0.01" class="custom-number-input">
+                                </div>
+                            </div>
+
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); width: 100px;">ior</div>
+                                <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                                    <input type="range" id="ctrl-ior" min="1" max="2.33" step="0.01" value="1.5" class="custom-slider" style="flex: 1;">
+                                    <div style="width: 1px; height: 12px; background: var(--panel-border);"></div>
+                                    <input type="number" id="ctrl-ior-val" value="1.50" step="0.01" class="custom-number-input">
+                                </div>
+                            </div>
+
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); width: 100px;">thickness</div>
+                                <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                                    <input type="range" id="ctrl-thickness" min="0" max="10" step="0.1" value="3.0" class="custom-slider" style="flex: 1;">
+                                    <div style="width: 1px; height: 12px; background: var(--panel-border);"></div>
+                                    <input type="number" id="ctrl-thickness-val" value="3.00" step="0.1" class="custom-number-input">
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); width: 100px;">roughness</div>
+                                <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                                    <input type="range" id="ctrl-roughness" min="0" max="0.5" step="0.01" value="0.05" class="custom-slider" style="flex: 1;">
+                                    <div style="width: 1px; height: 12px; background: var(--panel-border);"></div>
+                                    <input type="number" id="ctrl-roughness-val" value="0.05" step="0.01" class="custom-number-input">
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); width: 100px;">metalness</div>
+                                <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                                    <input type="range" id="ctrl-metalness" min="0" max="1" step="0.01" value="0.00" class="custom-slider" style="flex: 1;">
+                                    <div style="width: 1px; height: 12px; background: var(--panel-border);"></div>
+                                    <input type="number" id="ctrl-metalness-val" value="0.00" step="0.01" class="custom-number-input">
+                                </div>
+                            </div>
+
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); width: 100px; white-space: nowrap;">Reflection Power</div>
+                                <div style="flex: 1; display: flex; align-items: center; gap: 8px;">
+                                    <input type="range" id="ctrl-envMapIntensity" min="0" max="10" step="0.1" value="2.0" class="custom-slider" style="flex: 1;">
+                                    <div style="width: 1px; height: 12px; background: var(--panel-border);"></div>
+                                    <input type="number" id="ctrl-envMapIntensity-val" value="2.00" step="0.1" class="custom-number-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Bottom Decoration -->
+                    <div style="display: flex; justify-content: center; align-items: center; margin-top: 40px; gap: 20px;">
+                        <div style="height: 1px; flex: 1; background: var(--accent-color); opacity: 0.25;"></div>
+                        <div style="font-family: var(--font-mono); font-size: 9px; color: var(--accent-color); letter-spacing: 2px; white-space: nowrap;">EXP_SYS / V5.2</div>
+                        <div style="height: 1px; flex: 1; background: var(--accent-color); opacity: 0.25;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 背景影片層 -->
+        <div id="video-bg-container">
+            <!-- Dark Mode Video -->
+            <video id="bg-video-dark" class="bg-video-layer" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover; object-position: right center; transform: scale(0.68); transform-origin: right center; z-index: 1;">
+                <source src="./videos/background/Space_travel_animation_web.mp4" type="video/mp4">
+            </video>
+            <!-- Light Mode Video -->
+            <video id="bg-video-light" class="bg-video-layer" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover; object-position: right center; transform: scale(0.68); transform-origin: right center; z-index: 1;">
+                <source src="./videos/background/Space_travel_animation_web_normal.mp4" type="video/mp4">
+            </video>
+        </div>
+
+        <!-- 3D 渲染區域 -->
+        <div id="canvas-container"></div>
+    </div>
+
+    <!-- 下方展示櫃區域 (向下延伸) -->
+    <div id="showcase-section">
+        <div class="section-header">
+            <div class="section-title">Model Showcase</div>
+            <div class="section-line"></div>
+        </div>
+        
+        <div class="showcase-grid">
+            <!-- 展示卡片 00 (Glass) -->
+            <div class="showcase-card active" data-material-key="GLASS" style="--card-accent: #ffffff; --card-accent-glow: rgba(255, 255, 255, 0.25);">
+                <div class="card-preview" data-material="GLASS"></div>
+                <div class="card-status-line">
+                    <div class="card-id">00 / GLASS</div>
+                    <div class="card-status-dot"></div>
+                </div>
+                <div class="card-info">
+                    <div class="card-spec">TRANS: 1.0 / IOR: 1.5</div>
+                    <div class="card-name">GLASS_SIM.glb</div>
+                </div>
+            </div>
+            <!-- 展示卡片 01 (Water) -->
+            <div class="showcase-card" data-material-key="WATER" style="--card-accent: #00d2ff; --card-accent-glow: rgba(0, 210, 255, 0.25);">
+                <div class="card-preview" data-material="WATER"></div>
+                <div class="card-status-line">
+                    <div class="card-id">01 / WATER</div>
+                    <div class="card-status-dot"></div>
+                </div>
+                <div class="card-info">
+                    <div class="card-spec">RI: 1.333 / CAUSTICS: ACTIVE</div>
+                    <div class="card-name">WATER_SIM.glb</div>
+                </div>
+            </div>
+            <!-- 展示卡片 02 (Jelly) -->
+            <div class="showcase-card" data-material-key="JELLY" style="--card-accent: #ff60b5; --card-accent-glow: rgba(255, 96, 181, 0.25);">
+                <div class="card-preview" data-material="JELLY"></div>
+                <div class="card-status-line">
+                    <div class="card-id">02 / JELLY</div>
+                    <div class="card-status-dot"></div>
+                </div>
+                <div class="card-info">
+                    <div class="card-spec">RI: 1.450 / SS_SCAT: YES</div>
+                    <div class="card-name">JELLY_SIM.glb</div>
+                </div>
+            </div>
+            <!-- 展示卡片 03 (Metal) -->
+            <div class="showcase-card" data-material-key="METAL" style="--card-accent: #d1d5db; --card-accent-glow: rgba(209, 213, 219, 0.25);">
+                <div class="card-preview" data-material="METAL"></div>
+                <div class="card-status-line">
+                    <div class="card-id">03 / METAL</div>
+                    <div class="card-status-dot"></div>
+                </div>
+                <div class="card-info">
+                    <div class="card-spec">MET: 1.0 / ROUGH: 0.05</div>
+                    <div class="card-name">METAL_SIM.glb</div>
+                </div>
+            </div>
+            <!-- 展示卡片 04 (Toon) -->
+            <div class="showcase-card" data-material-key="TOON" style="--card-accent: #ffe600; --card-accent-glow: rgba(255, 230, 0, 0.25);">
+                <div class="card-preview" data-material="TOON"></div>
+                <div class="card-status-line">
+                    <div class="card-id">04 / TOON</div>
+                    <div class="card-status-dot"></div>
+                </div>
+                <div class="card-info">
+                    <div class="card-spec">TOON: YES / SHADES: 3</div>
+                    <div class="card-name">TOON_SIM.glb</div>
+                </div>
+            </div>
+            <!-- 展示卡片 05 (Wood) -->
+            <div class="showcase-card" data-material-key="WOOD" style="--card-accent: #8bf370; --card-accent-glow: rgba(139, 243, 112, 0.25);">
+                <div class="card-preview" data-material="WOOD"></div>
+                <div class="card-status-line">
+                    <div class="card-id">05 / WOOD</div>
+                    <div class="card-status-dot"></div>
+                </div>
+                <div class="card-info">
+                    <div class="card-spec">ROUGH: 0.85 / BUMP: GEN</div>
+                    <div class="card-name">WOOD_SIM.glb</div>
+                </div>
+            </div>
+            <!-- 展示卡片 06 (Rock/Moss) -->
+            <div class="showcase-card" data-material-key="ROCK_MOSS" style="--card-accent: #8b9a46; --card-accent-glow: rgba(139, 154, 70, 0.25);">
+                <div class="card-preview" data-material="ROCK_MOSS"></div>
+                <div class="card-status-line">
+                    <div class="card-id">06 / MOSS</div>
+                    <div class="card-status-dot"></div>
+                </div>
+                <div class="card-info">
+                    <div class="card-spec">PBR: 4K / MOSS: ACTIVE</div>
+                    <div class="card-name">MOSS_ROCK.glb</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入 Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/",
+                "tweakpane": "https://cdn.jsdelivr.net/npm/tweakpane@4.0.1/dist/tweakpane.min.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+        import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
+        import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+        // 替換原先的 RGBShiftShader，改用客製化的 Cyberpunk 2077 風格 Glitch Shader
+        const CyberGlitchShader = {
+            uniforms: {
+                'tDiffuse': { value: null },
+                'amount': { value: 0.0 },
+                'time': { value: 0.0 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D tDiffuse;
+                uniform float amount;
+                uniform float time;
+                varying vec2 vUv;
+
+                float rand(vec2 co){
+                    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+                }
+
+                void main() {
+                    vec2 p = vUv;
+                    
+                    if (amount > 0.0) {
+                        // 1. 區塊化水平撕裂 (Blocky Horizontal Tearing)
+                        float stripHeight = 30.0;
+                        float strip = step(0.9, rand(vec2(floor(p.y * stripHeight), floor(time * 15.0))));
+                        
+                        // 隨機向左或向右撕裂
+                        float tearOffset = (rand(vec2(floor(time * 15.0), 1.0)) - 0.5) * 0.15 * amount;
+                        p.x += tearOffset * strip;
+                        
+                        // 2. 賽博龐克感 RGB 色偏 (Cyberpunk RGB Shift)
+                        float shift = 0.02 * amount + strip * 0.06 * amount;
+                        vec4 cr = texture2D(tDiffuse, p + vec2(shift, 0.0));
+                        vec4 cga = texture2D(tDiffuse, p);
+                        vec4 cb = texture2D(tDiffuse, p - vec2(shift, 0.0));
+                        
+                        vec4 glitchColor = vec4(cr.r, cga.g, cb.b, cga.a);
+                        
+                        // 3. 掃描線與雜訊 (Scanlines & Noise)
+                        float scanline = sin(vUv.y * 800.0 + time * 20.0) * 0.04 * amount;
+                        float staticNoise = (rand(p + time) - 0.5) * 0.1 * amount;
+                        glitchColor.rgb -= scanline;
+                        glitchColor.rgb += staticNoise;
+                        
+                        // 4. 與原圖混合 (濾鏡感)
+                        vec4 baseColor = texture2D(tDiffuse, vUv);
+                        float mixRatio = clamp(amount * 4.0, 0.0, 0.7); // 最高保留 30% 原圖
+                        
+                        gl_FragColor = mix(baseColor, glitchColor, mixRatio);
+                    } else {
+                        gl_FragColor = texture2D(tDiffuse, vUv);
+                    }
+                }
+            `
+        };
+        import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+        
+        let shadowLight; // 提升作用域以供動畫存取
+        const shadowMaterials = []; // 用於存放所有影子材質，以便動態淡入淡出
+        let shadowMultiplier = 1.0;
+        let targetShadowMultiplier = 1.0;
+
+        const previewMeshes = []; // 存放展示卡片的 3D 預覽網格
+        
+        // 預加載 PBR 貼圖系統
+        const loadedTextures = {};
+
+        // 3D 玻璃罩轉場特效變數
+        let glassCoverGroup = null;
+        let transitionProgress = 0.0;
+        let isMaterialTransitioning = false;
+        let currentCoverY = 12.0;
+        let targetCoverY = 12.0;
+        let isCardTransitioning = false;
+        let glassCoverMaterial = null; // 全域玻璃罩材質參照，供轉場時動態變革物理特性
+
+        // 1. 初始化場景
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
+        camera.position.set(0, 0, 15);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        
+        // 開啟陰影映射
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        container.appendChild(renderer.domElement);
+
+        // --- Post-Processing (全螢幕 RGB 分離) ---
+        const composer = new EffectComposer(renderer);
+        composer.setSize(container.clientWidth, container.clientHeight);
+        const renderPass = new RenderPass(scene, camera);
+        composer.addPass(renderPass);
+        
+        const rgbShiftPass = new ShaderPass(CyberGlitchShader);
+        rgbShiftPass.uniforms['amount'].value = 0.0;
+        rgbShiftPass.uniforms['time'].value = 0.0;
+        composer.addPass(rgbShiftPass);
+        
+        const outputPass = new OutputPass();
+        composer.addPass(outputPass);
+
+        // 獨立旋轉 LOGO 邏輯
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let dragVelocity = new THREE.Vector2(0, 0);
+        const mouse = new THREE.Vector2(0, 0);
+        
+        // 旋轉四元數邏輯 (參考 glass_test.html)
+        const targetQuat = new THREE.Quaternion();
+        const identityQuat = new THREE.Quaternion();
+        const targetHoverQuat = new THREE.Quaternion();
+        const currentHoverQuat = new THREE.Quaternion();
+
+        container.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+            dragVelocity.set(0, 0); // 抓取時停止慣性
+        });
+        window.addEventListener('mouseup', () => { isDragging = false; });
+        window.addEventListener('mousemove', (e) => {
+            // 標準化滑鼠座標 (-1 ~ 1) 用於懸停效果
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+            if (isDragging) {
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                dragVelocity.x = deltaX * 0.008;
+                dragVelocity.y = deltaY * 0.008;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            }
+        });
+
+        // 2. 燈光與環境
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+        dirLight.position.set(5, 10, 5);
+        dirLight.castShadow = true;
+        dirLight.shadow.camera.top = 10;
+        dirLight.shadow.camera.bottom = -10;
+        dirLight.shadow.camera.left = -10;
+        dirLight.shadow.camera.right = 10;
+        dirLight.shadow.bias = -0.001;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        scene.add(dirLight);
+
+        // 建立透明的陰影接收地板 (原生的平面移除，將由 3D 底座取代)
+        // 但為了以防萬一，先留著並向下移避免穿幫
+        const floorGeometry = new THREE.PlaneGeometry(100, 100);
+        const floorMaterial = new THREE.ShadowMaterial({ opacity: 0.1 });
+        shadowMaterials.push({ material: floorMaterial, baseOpacity: 0.1 });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -10; 
+        floor.receiveShadow = true;
+        scene.add(floor);
+
+        // Tweakpane UI 參數與整合
+        const params = {
+            color: '#ffffff',
+            effectColor: '#00d0ff',
+            transmission: 1.0, // 必須為 1.0
+            ior: 1.5,
+            thickness: 3.0,
+            roughness: 0.05,
+            metalness: 0.0,
+            envMapIntensity: 2.0,
+            iridescence: 0.0,
+            iridescenceIOR: 1.3,
+            attenuationColor: '#ffffff',
+            attenuationDistance: 0.0,
+            isToon: false,
+            wireframe: false,
+            offsetX: 0.0,
+            offsetY: 0.0,
+            offsetZ: 0.05,
+            modelScale: 1.0
+        };
+
+        const materialPresets = {
+            'GLASS': { color: '#ffffff', effectColor: '#ffffff', transmission: 1.0, ior: 1.5, thickness: 3.0, roughness: 0.05, metalness: 0.0, envMapIntensity: 2.0, iridescence: 0.0, iridescenceIOR: 1.3, attenuationColor: '#ffffff', attenuationDistance: Infinity, isToon: false },
+            'ROCK_MOSS': {
+                color: '#ffffff', effectColor: '#8da373', transmission: 0.0, ior: 1.5, thickness: 0.0, roughness: 1.0, metalness: 0.0, envMapIntensity: 0.5, iridescence: 0.0, iridescenceIOR: 1.3, attenuationColor: '#ffffff', attenuationDistance: Infinity, isToon: false,
+                clearcoat: 0.0, clearcoatRoughness: 1.0,
+                pbr: {
+                    baseColor: './3D_shader/rock_moss/rock_moss_base_color.png',
+                    roughnessMap: './3D_shader/rock_moss/rock_moss_rough.png',
+                    normalMap: './3D_shader/rock_moss/rock_moss_normal.png',
+                    normalScale: [3.5, 3.5],
+                    repeat: [1.5, 1.5]
+                }
+            },
+            'WATER': { color: '#a0d8ef', effectColor: '#a0d8ef', transmission: 1.0, ior: 1.33, thickness: 5.0, roughness: 0.02, metalness: 0.0, envMapIntensity: 2.0, iridescence: 0.0, iridescenceIOR: 1.3, attenuationColor: '#ffffff', attenuationDistance: Infinity, isToon: false },
+            'FIRE':  { color: '#ff4400', effectColor: '#ff4400', transmission: 0.9, ior: 1.8, thickness: 2.0, roughness: 0.1, metalness: 0.2, envMapIntensity: 3.0, iridescence: 0.0, iridescenceIOR: 1.3, attenuationColor: '#ffffff', attenuationDistance: Infinity, isToon: false },
+            'WOOD':  {
+                color: '#ffffff', effectColor: '#d4a373', transmission: 0.0, ior: 1.5, thickness: 0.0, roughness: 1.0, metalness: 0.0, envMapIntensity: 0.5, iridescence: 0.0, iridescenceIOR: 1.3, attenuationColor: '#ffffff', attenuationDistance: Infinity, isToon: false,
+                clearcoat: 0.0, clearcoatRoughness: 1.0,
+                pbr: {
+                    baseColor: './3D_shader/wood/wood_base_color.png',
+                    roughnessMap: './3D_shader/wood/wood_rough.png',
+                    normalMap: './3D_shader/wood/wood_normal.png',
+                    normalScale: [3.0, 3.0],
+                    repeat: [1.5, 1.5]
+                }
+            },
+            'METAL': { color: '#bfc3c8', effectColor: '#bfc3c8', transmission: 0.0, ior: 1.45, thickness: 0.0, roughness: 0.05, metalness: 1.0, envMapIntensity: 2.5, iridescence: 0.0, iridescenceIOR: 1.3, attenuationColor: '#ffffff', attenuationDistance: Infinity, isToon: false },
+            'HOLO':  { color: '#ffffff', effectColor: '#ff00ff', transmission: 0.2, ior: 1.5, thickness: 1.0, roughness: 0.05, metalness: 0.5, envMapIntensity: 1.5, iridescence: 1.0, iridescenceIOR: 1.8, attenuationColor: '#ffffff', attenuationDistance: Infinity, isToon: false },
+            'JELLY': { color: '#ffccdd', effectColor: '#ffccdd', transmission: 1.0, ior: 1.2, thickness: 10.0, roughness: 0.15, metalness: 0.0, envMapIntensity: 1.0, iridescence: 0.0, iridescenceIOR: 1.3, attenuationColor: '#ff2288', attenuationDistance: 2.0, isToon: false },
+            'TOON':  { color: '#ffcc00', effectColor: '#ffcc00', transmission: 0.0, ior: 1.0, thickness: 0.0, roughness: 1.0, metalness: 0.0, envMapIntensity: 0.0, iridescence: 0.0, iridescenceIOR: 1.3, attenuationColor: '#ffffff', attenuationDistance: Infinity, isToon: true }
+        };
+
+        const paneContainer = document.getElementById('material-ui-container');
+        
+        // --- 替換原先的 Tweakpane，改為自定義 UI 綁定邏輯 ---
+        const uiControls = ['color', 'transmission', 'ior', 'thickness', 'roughness', 'metalness', 'envMapIntensity'];
+        
+        function updateCustomUIValues() {
+            uiControls.forEach(key => {
+                const el = document.getElementById('ctrl-' + key);
+                const valEl = document.getElementById('ctrl-' + key + '-val');
+                const textEl = document.getElementById('ctrl-' + key + '-text'); // 針對 color 的文字
+                if (el) {
+                    el.value = params[key];
+                }
+                if (valEl) {
+                    valEl.value = Number(params[key]).toFixed(2);
+                }
+                if (textEl && key === 'color') {
+                    textEl.innerText = params[key];
+                    // 同步拉桿顏色 CSS 變數（頁面載入、preset 切換時也同步）
+                    document.documentElement.style.setProperty('--user-color', params[key]);
+                }
+            });
+        }
+        
+        uiControls.forEach(key => {
+            const el = document.getElementById('ctrl-' + key);
+            const valEl = document.getElementById('ctrl-' + key + '-val');
+            
+            const updateParam = (val) => {
+                params[key] = key === 'color' ? val : parseFloat(val);
+                if (valEl) valEl.value = Number(params[key]).toFixed(2);
+                if (el) el.value = params[key];
+                
+                const textEl = document.getElementById('ctrl-' + key + '-text');
+                if (textEl && key === 'color') {
+                    textEl.innerText = params[key];
+                    // 同步更新拉桿顏色 CSS 變數
+                    document.documentElement.style.setProperty('--user-color', params[key]);
+                }
+                if (typeof applyCurrentParamsToModel === 'function') {
+                    applyCurrentParamsToModel();
+                }
+            };
+
+            if (el) {
+                el.addEventListener('input', (e) => updateParam(e.target.value));
+            }
+            if (valEl) {
+                valEl.addEventListener('change', (e) => updateParam(e.target.value));
+            }
+        });
+        
+        // Toggle 面板顯示/隱藏 (右側小三角形 UI)
+        const toggleBtn = document.getElementById('ctrl-toggle-btn');
+        let isPanelOpen = true;
+        if (toggleBtn && paneContainer) {
+            toggleBtn.addEventListener('click', () => {
+                isPanelOpen = !isPanelOpen;
+                paneContainer.style.display = isPanelOpen ? 'block' : 'none';
+                toggleBtn.style.transform = isPanelOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+            });
+        }
+
+        // Reset 按鈕邏輯 (重設數值為當前 preset)
+        const resetBtn = document.getElementById('ctrl-reset-btn');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                const preset = materialPresets[currentTransitionPresetKey];
+                if (preset) {
+                    params.color = preset.color;
+                    params.transmission = preset.transmission;
+                    params.ior = preset.ior;
+                    params.thickness = preset.thickness;
+                    params.roughness = preset.roughness;
+                    params.metalness = preset.metalness;
+                    params.envMapIntensity = preset.envMapIntensity;
+                    
+                    updateCustomUIValues();
+                    if (typeof applyCurrentParamsToModel === 'function') {
+                        applyCurrentParamsToModel();
+                    }
+                }
+            });
+        }
+
+        // 依使用者要求關閉 Calibration 面板 (OffsetZ 已預設 0.05)
+        // 建立 Toon 所需的 Gradient Texture
+        const format = ( renderer.capabilities.isWebGL2 ) ? THREE.RedFormat : THREE.LuminanceFormat;
+        const colors = new Uint8Array( [0, 128, 255] ); // 簡單的三階陰影
+        const gradientMap = new THREE.DataTexture( colors, colors.length, 1, format );
+        gradientMap.needsUpdate = true;
+        gradientMap.minFilter = THREE.NearestFilter;
+        gradientMap.magFilter = THREE.NearestFilter;
+        gradientMap.generateMipmaps = false;
+
+        // --- 雜訊溶解轉場特效 (Noise Dissolve Transition) ---
+        // --- 3D 轉場特殊 Uniform 變數與著色器注入系統 ---
+        const sharedDissolve = { value: 0.0 };
+        const sharedDistortion = { value: 0.0 };
+        const sharedHoloTransition = { value: -2.0 };
+        const sharedTransitionPreset = { value: 0.0 }; // 0: WATER (A), 1: METAL (B), 2: HOLO (C)
+        const sharedTime = { value: 0.0 };
+        const sharedDissolveColor = { value: new THREE.Color(0x00d0ff) };
+        
+        let oldPreset = {};
+        let newPreset = {};
+        let currentTransitionPresetKey = 'GLASS';
+
+        const injectTransitionShaders = (shader) => {
+            shader.uniforms.uDissolve = sharedDissolve;
+            shader.uniforms.uDistortion = sharedDistortion;
+            shader.uniforms.uHoloTransition = sharedHoloTransition;
+            shader.uniforms.uTransitionPreset = sharedTransitionPreset;
+            shader.uniforms.uTime = sharedTime;
+            shader.uniforms.uDissolveColor = sharedDissolveColor;
+            
+            // 頂點著色器注入
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <common>',
+                `
+                #include <common>
+                uniform float uDistortion;
+                uniform float uTransitionPreset;
+                uniform float uTime;
+                uniform float uDissolve;
+                uniform float uHoloTransition;
+                varying vec3 vPositionDissolve;
+
+                float hash(vec3 p) {
+                    p = fract(p * 0.3183099 + .1);
+                    p *= 17.0;
+                    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+                }
+                float noise(in vec3 x) {
+                    vec3 i = floor(x);
+                    vec3 f = fract(x);
+                    f = f * f * (3.0 - 2.0 * f);
+                    return mix(mix(mix(hash(i + vec3(0.0,0.0,0.0)), hash(i + vec3(1.0,0.0,0.0)), f.x),
+                                   mix(hash(i + vec3(0.0,1.0,0.0)), hash(i + vec3(1.0,1.0,0.0)), f.x), f.x),
+                               mix(mix(hash(i + vec3(0.0,0.0,1.0)), hash(i + vec3(1.0,0.0,1.0)), f.x),
+                                   mix(hash(i + vec3(0.0,1.0,1.0)), hash(i + vec3(1.0,1.0,1.0)), f.x), f.x), f.z);
+                }
+                `
+            );
+            
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <begin_vertex>',
+                `
+                #include <begin_vertex>
+                vPositionDissolve = position;
+                
+                // 方案 A 升級: Holographic Radial Dissolve (全像輻射粒子消融)
+                if (uTransitionPreset == 0.0 && uDissolve > 0.0) {
+                    float dist = length(position);
+                    float radialThreshold = uDissolve * 4.0;
+                    float noiseVal = noise(position * 3.0);
+                    float edge = dist + noiseVal * 0.5;
+                    
+                    // Holographic Glitch 故障效果 (僅在消融邊緣發生)
+                    float distToEdge = abs(edge - radialThreshold);
+                    if (distToEdge < 0.4) {
+                        float glitch = step(0.7, fract(sin(uTime * 50.0 + position.y * 15.0) * 43758.5453)) * 0.08 * (1.0 - distToEdge / 0.4);
+                        transformed.x += glitch;
+                        transformed.z += glitch * 0.5;
+                        
+                        // 邊緣輕微的膨脹，呈現能量過載感
+                        transformed += normal * (0.05 * (1.0 - distToEdge / 0.4));
+                    }
+                    
+                    // 保留原本微弱的波動感
+                    float waveX = sin(position.y * 6.0 + uTime * 5.0) * 0.05 * uDistortion;
+                    transformed.x += waveX;
+                }
+                
+                // 方案 C (HOLO) 全息微弱抖動
+                if (uTransitionPreset == 2.0) {
+                    // 僅在掃描線附近的頂點產生隨機的數位故障抖動
+                    float distToScan = abs(position.y - uHoloTransition);
+                    if (distToScan < 0.25) {
+                        float glitch = step(0.85, sin(uTime * 40.0 + position.y * 20.0)) * 0.04 * (1.0 - distToScan / 0.25);
+                        transformed.x += glitch;
+                        transformed.z += glitch;
+                    }
+                }
+                `
+            );
+
+            // 片元著色器注入
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <common>',
+                `
+                #include <common>
+                uniform float uDissolve;
+                uniform float uHoloTransition;
+                uniform float uTransitionPreset;
+                uniform float uDistortion;
+                uniform float uTime;
+                uniform vec3 uDissolveColor;
+                varying vec3 vPositionDissolve;
+                
+                float hash(vec3 p) {
+                    p = fract(p * 0.3183099 + .1);
+                    p *= 17.0;
+                    return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+                }
+                float noise(in vec3 x) {
+                    vec3 i = floor(x);
+                    vec3 f = fract(x);
+                    f = f * f * (3.0 - 2.0 * f);
+                    return mix(mix(mix(hash(i + vec3(0.0,0.0,0.0)), hash(i + vec3(1.0,0.0,0.0)), f.x),
+                                   mix(hash(i + vec3(0.0,1.0,0.0)), hash(i + vec3(1.0,1.0,0.0)), f.x), f.x),
+                               mix(mix(hash(i + vec3(0.0,0.0,1.0)), hash(i + vec3(1.0,0.0,1.0)), f.x),
+                                   mix(hash(i + vec3(0.0,1.0,1.0)), hash(i + vec3(1.0,1.0,1.0)), f.x), f.x), f.z);
+                }
+                `
+            );
+
+            shader.fragmentShader = shader.fragmentShader.replace(
+                '#include <dithering_fragment>',
+                `
+                #include <dithering_fragment>
+                
+                // 方案 A 升級: Procedural Radial Noise 消融與高光邊緣
+                if (uTransitionPreset == 0.0 && uDissolve > 0.0) {
+                    float dist = length(vPositionDissolve);
+                    float radialThreshold = uDissolve * 2.5; // 縮小極限擴張半徑，避免過度消失造成停滯
+                    
+                    // 根據消融進度縮小雜訊與光暈厚度，避免在收尾時中心殘留跳動的雜訊點
+                    float fadeOut = smoothstep(0.0, 0.15, uDissolve);
+                    float noiseVal = noise(vPositionDissolve * 3.0) * fadeOut;
+                    float edge = dist + noiseVal * 0.5;
+                    float glowThickness = max(0.01, 0.3 * fadeOut);
+                    
+                    if (edge < radialThreshold) {
+                        discard;
+                    } else if (edge < radialThreshold + glowThickness) {
+                        // 邊緣發光：採用材質基底色動態生成高光
+                        float t = (radialThreshold + glowThickness - edge) / glowThickness; // 0 到 1
+                        
+                        // 加入強烈的 RGB Separate 與 Glitch 效果
+                        // 降低 step 門檻讓雜訊面積更大 (0.7 代表 30% 機率)
+                        float glitchShift = step(0.7, fract(sin(uTime * 50.0 + vPositionDissolve.y * 20.0) * 43758.5453));
+                        
+                        // 不要過度死白，保留更多原本色彩，白化比例改為 0.5
+                        vec3 hotColor = mix(uDissolveColor, vec3(1.0), 0.5);
+                        
+                        if (glitchShift > 0.0) {
+                            // 賽博龐克感 RGB 錯位：以原色為基礎，進行強烈對比分離
+                            hotColor = vec3(uDissolveColor.r * 2.5, uDissolveColor.g * 0.2, uDissolveColor.b * 2.0 + 0.5);
+                        }
+
+                        vec4 glowColor = vec4(mix(uDissolveColor, hotColor, t), 1.0);
+                        gl_FragColor = mix(gl_FragColor, glowColor, t * 0.95);
+                        
+                        // 極限邊緣核心發光 (疊加染色高光，而非死白)
+                        if (t > 0.8) {
+                            gl_FragColor.rgb += hotColor * 0.6;
+                        }
+                    }
+                }
+                
+                // 方案 B (METAL) 鍛造敲擊時的高溫自發光 (Forge Emission Glow) 與冷卻
+                if (uTransitionPreset == 1.0 && uDistortion > 0.0) {
+                    // 自發光疊加強度正比於撞擊能量，並以高飽和亮橙色呈現
+                    float glowIntensity = uDistortion * 2.0;
+                    gl_FragColor.rgb += vec3(1.0, 0.35, 0.0) * glowIntensity;
+                }
+                
+                // 方案 C (HOLO) 全息消融與數位掃描線
+                if (uTransitionPreset == 2.0) {
+                    // Y 軸消融 (由下往上消失，uHoloTransition 範圍為 -2.0 到 2.0)
+                    if (vPositionDissolve.y < uHoloTransition) {
+                        discard;
+                    }
+                    
+                    // 消融邊緣亮藍色發光線
+                    float edgeWidth = 0.15;
+                    if (vPositionDissolve.y < uHoloTransition + edgeWidth) {
+                        float t = (uHoloTransition + edgeWidth - vPositionDissolve.y) / edgeWidth;
+                        vec4 holoColor = vec4(0.0, 0.95, 1.0, 1.0);
+                        gl_FragColor = mix(gl_FragColor, holoColor, (1.0 - t) * 0.95);
+                    }
+                    
+                    // 全息數位掃描線
+                    float scanline = sin(vPositionDissolve.y * 25.0 - uTime * 15.0) * 0.5 + 0.5;
+                    gl_FragColor += vec4(0.0, 0.45, 0.7, 0.0) * scanline * 0.35;
+                }
+                `
+            );
+        };
+        
+        function applyCurrentParamsToModel() {
+            if (!mainModel) return;
+            mainModel.traverse((child) => {
+                if (!child.isMesh) return;
+
+                const needToon = params.isToon;
+                const isToonNow  = child.material && child.material.isMeshToonMaterial;
+                const isPhysNow  = child.material && child.material.isMeshPhysicalMaterial;
+
+                // 判斷是否切換了 Preset，如果是，則需要重建材質以確保 Shader 巨集 (Macro) 編譯正確
+                const currentPresetKey = currentTransitionPresetKey || 'CUSTOM';
+                const hasPresetChanged = !child.material || child.material.userData.presetKey !== currentPresetKey;
+
+                // 【關鍵修復】：偵測貼圖是否已非同步到位但材質尚未包含貼圖，若是則強制重建
+                // 這是確保 Three.js WebGL Shader Macro (USE_MAP 等) 能正確編譯的唯一方法
+                const presetDef = materialPresets[currentPresetKey] || materialPresets['WATER'];
+                const hasPBR = presetDef.pbr !== undefined;
+                const tex = loadedTextures[currentPresetKey];
+                const hasTexData = tex && tex.map;
+                const hasTextureNow = !!(child.material && child.material.map);
+                // 若材質應有貼圖（hasPBR && hasTexData）但目前材質沒有貼圖，需強制重建
+                const mustRebuildForTex = hasPBR && hasTexData && !hasTextureNow;
+                const mustRebuild = hasPresetChanged || mustRebuildForTex;
+
+                if (needToon && (!isToonNow || mustRebuild)) {
+                    // Physical → Toon 或 Preset 改變時：重建
+                    if (child.material) child.material.dispose();
+                    const mat = new THREE.MeshToonMaterial({ gradientMap });
+                    mat.onBeforeCompile = injectTransitionShaders;
+                    mat.userData.presetKey = currentPresetKey;
+                    mat.wireframe = params.wireframe;
+                    child.material = mat;
+
+                } else if (!needToon && (!isPhysNow || mustRebuild)) {
+                    // Toon → Physical 或 Preset 改變時，或貼圖剛到位需重建：確保 Macro 編譯正確
+                    if (child.material) child.material.dispose();
+                    
+                    const matParams = {
+                        clearcoat: presetDef.clearcoat !== undefined ? presetDef.clearcoat : 1.0,
+                        clearcoatRoughness: presetDef.clearcoatRoughness !== undefined ? presetDef.clearcoatRoughness : 0.1,
+                        transparent: !(hasPBR && hasTexData),
+                        side: THREE.DoubleSide
+                    };
+                    
+                    // 在 constructor 裡直接放入貼圖，確保 Shader Macro 在編譯時已啟用
+                    if (hasPBR && hasTexData) {
+                        matParams.map = tex.map;
+                        matParams.roughnessMap = tex.roughnessMap || null;
+                        matParams.normalMap = tex.normalMap || null;
+                        if (presetDef.pbr.normalScale) {
+                            matParams.normalScale = new THREE.Vector2(presetDef.pbr.normalScale[0], presetDef.pbr.normalScale[1]);
+                        }
+                        matParams.roughness = presetDef.roughness;
+                        matParams.metalness = presetDef.metalness;
+                    }
+                    
+                    const mat = new THREE.MeshPhysicalMaterial(matParams);
+                    mat.onBeforeCompile = injectTransitionShaders;
+                    mat.userData.presetKey = currentPresetKey;
+                    mat.wireframe = params.wireframe;
+                    child.material = mat;
+
+                }
+                // else: 同一 Preset 下沿用材質，只更新屬性
+
+                // 套用屬性
+                if (params.isToon) {
+                    child.material.color.set(params.color);
+                    child.material.wireframe = params.wireframe;
+                } else {
+                    const m = child.material;
+                    m.color.set(params.color);
+                    m.transmission        = params.transmission;
+                    m.ior                 = params.ior;
+                    m.thickness           = params.thickness;
+                    m.roughness           = params.roughness;
+                    m.metalness           = params.metalness;
+                    m.envMapIntensity     = params.envMapIntensity;
+                    m.iridescence         = params.iridescence;
+                    m.iridescenceIOR      = params.iridescenceIOR;
+                    m.attenuationColor.set(params.attenuationColor);
+                    m.attenuationDistance = (params.attenuationDistance > 0 && isFinite(params.attenuationDistance))
+                        ? params.attenuationDistance
+                        : Infinity;
+                    m.emissive.setHex(0x000000);
+                    m.emissiveIntensity   = 0;
+                    m.wireframe           = params.wireframe;
+                    
+                    // PBR 材質：確保屬性覆蓋正確（貼圖在重建時已設好，此處也要同步更新所有貼圖 reference）
+                    if (hasPBR && hasTexData) {
+                        // 【核心修復】動態補上貼圖 reference，解決非同步到位後 roughness/normal 不生效問題
+                        if (tex.map && m.map !== tex.map) {
+                            m.map = tex.map;
+                            m.needsUpdate = true;
+                        }
+                        if (tex.roughnessMap && m.roughnessMap !== tex.roughnessMap) {
+                            m.roughnessMap = tex.roughnessMap;
+                            m.needsUpdate = true;
+                        }
+                        if (tex.normalMap && m.normalMap !== tex.normalMap) {
+                            m.normalMap = tex.normalMap;
+                            if (presetDef.pbr.normalScale) {
+                                m.normalScale.set(presetDef.pbr.normalScale[0], presetDef.pbr.normalScale[1]);
+                            }
+                            m.needsUpdate = true;
+                        }
+                        m.roughness = presetDef.roughness;
+                        m.metalness = presetDef.metalness;
+                        m.transmission = 0.0;
+                        m.transparent = false;
+                        m.envMapIntensity = presetDef.envMapIntensity;
+                        m.clearcoat = presetDef.clearcoat !== undefined ? presetDef.clearcoat : 1.0;
+                        m.clearcoatRoughness = presetDef.clearcoatRoughness !== undefined ? presetDef.clearcoatRoughness : 0.1;
+                    } else if (!hasPBR) {
+                        // 非 PBR 材質，確保清空殘留貼圖
+                        m.map = null;
+                        m.roughnessMap = null;
+                        m.normalMap = null;
+                    }
+                }
+                child.material.needsUpdate = true;
+            });
+            updateCustomUIValues();
+        }
+
+        // 粒子系統宣告
+        let dissolveParticles;
+        let particlePositions, particleVelocities;
+        const particleCount = 1000;
+
+        // --- 3D 轉場特效初始化 ---
+        function initTransitionEffects() {
+            // 玻璃罩 (保留結構以維持轉場進度計算，但設為 invisible 且不加入場景)
+            glassCoverGroup = new THREE.Group();
+            glassCoverGroup.visible = false;
+            // 不呼叫 scene.add(glassCoverGroup)，玻璃罩已完全移除
+            
+            // 新增：高教能全像輻射消融粒子系統 (Holographic Particles)
+            const pGeo = new THREE.BufferGeometry();
+            particlePositions = new Float32Array(particleCount * 3);
+            particleVelocities = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount; i++) {
+                particlePositions[i*3] = 9999; // 初始隱藏
+            }
+            pGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+            
+            const pMat = new THREE.PointsMaterial({
+                color: 0x00d0ff,
+                size: 0.05,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending,
+                depthWrite: false
+            });
+            dissolveParticles = new THREE.Points(pGeo, pMat);
+            scene.add(dissolveParticles);
+        }
+
+        // --- 初始化展示卡片內部的微型 3D 材質預覽幾何體 (Tiny Three.js inside cards) ---
+        function initCardPreviews() {
+            const previewContainers = document.querySelectorAll('.card-preview');
+            previewContainers.forEach(container => {
+                const materialKey = container.getAttribute('data-material');
+                const preset = materialPresets[materialKey];
+                if (!preset) return;
+
+                const w = container.clientWidth || 240;
+                const h = container.clientHeight || 280;
+                
+                const pScene = new THREE.Scene();
+                const pCamera = new THREE.PerspectiveCamera(45, w / h, 0.1, 10);
+                pCamera.position.set(0, 0, 2.5);
+
+                const pRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                pRenderer.setSize(w, h);
+                pRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+                pRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+                pRenderer.toneMappingExposure = 1.0;
+                container.appendChild(pRenderer.domElement);
+
+                // 燈光與環境
+                const pAmbient = new THREE.AmbientLight(0xffffff, 0.5);
+                pScene.add(pAmbient);
+                const pDir = new THREE.DirectionalLight(0xffffff, 1.5);
+                pDir.position.set(2, 4, 3);
+                pScene.add(pDir);
+
+                if (hdriTexture) {
+                    pScene.environment = hdriTexture;
+                }
+
+                // 微型幾何體：使用圓角正方體 (RoundedBoxGeometry) 展示核心材質方塊
+                const pGeo = new RoundedBoxGeometry(0.55, 0.55, 0.55, 6, 0.08);
+                
+                let pMat;
+                if (preset.isToon) {
+                    pMat = new THREE.MeshToonMaterial({
+                        color: preset.color,
+                        gradientMap
+                    });
+                } else {
+                    pMat = new THREE.MeshPhysicalMaterial({
+                        color: preset.color,
+                        transmission: preset.transmission,
+                        ior: preset.ior,
+                        thickness: preset.thickness * 0.12, // 縮減厚度比，配合微型畫布比例
+                        roughness: preset.roughness,
+                        metalness: preset.metalness,
+                        envMapIntensity: preset.envMapIntensity * 1.5, // 稍微拉高反射亮度
+                        iridescence: preset.iridescence,
+                        iridescenceIOR: preset.iridescenceIOR,
+                        attenuationColor: preset.attenuationColor,
+                        attenuationDistance: preset.attenuationDistance === Infinity ? Infinity : preset.attenuationDistance * 0.15,
+                        clearcoat: 1.0,
+                        clearcoatRoughness: 0.1,
+                        transparent: true,
+                        side: THREE.DoubleSide
+                    });
+                }
+
+                const pMesh = new THREE.Mesh(pGeo, pMat);
+                pScene.add(pMesh);
+                previewMeshes.push({ mesh: pMesh, key: materialKey });
+
+                // 自主低速旋轉動畫
+                function pAnimate() {
+                    requestAnimationFrame(pAnimate);
+                    pMesh.rotation.x += 0.005;
+                    pMesh.rotation.y += 0.008;
+                    pRenderer.render(pScene, pCamera);
+                }
+                pAnimate();
+
+                // 支援 Resize 自適應縮放
+                window.addEventListener('resize', () => {
+                    const nw = container.clientWidth;
+                    const nh = container.clientHeight;
+                    pCamera.aspect = nw / nh;
+                    pCamera.updateProjectionMatrix();
+                    pRenderer.setSize(nw, nh);
+                });
+            });
+            updatePreviewMaterials();
+        }
+
+        // 3. 載入模型與環境貼圖
+        let mainModel;
+        const loader = new GLTFLoader();
+        // 重要：由於瀏覽器 CORS 限制，必須透過本地伺服器（如 Live Server）開啟此 HTML，否則模型與貼圖將無法載入。
+
+        // 建立透明背景清除器 (Eraser Mesh)
+        // 使玻璃可精準折射平面的 Three.js 背景圖，同時在最終畫布上清除背景，讓背後的 HTML 元素能完美透出
+        const eraserGeo = new THREE.BufferGeometry();
+        eraserGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0]), 3));
+        const eraserMat = new THREE.ShaderMaterial({
+            vertexShader: `void main() { gl_Position = vec4(position.xy, 1.0, 1.0); }`,
+            fragmentShader: `void main() { gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0); }`,
+            depthTest: true,
+            depthFunc: THREE.EqualDepth, // 僅擦除背景深度的像素
+            depthWrite: false,
+            transparent: true,
+            blending: THREE.NoBlending,
+        });
+        const eraserMesh = new THREE.Mesh(eraserGeo, eraserMat);
+        eraserMesh.renderOrder = 9999;
+        eraserMesh.frustumCulled = false;
+        scene.add(eraserMesh);
+
+        const texLoader = new THREE.TextureLoader();
+        const exrLoader = new EXRLoader();
+
+        function updatePreviewMaterials() {
+            previewMeshes.forEach(({ mesh, key }) => {
+                const presetDef = materialPresets[key];
+                const hasPBR = presetDef && presetDef.pbr !== undefined;
+                const tex = loadedTextures[key];
+                const hasTexData = tex && tex.map;
+
+                if (hasPBR && hasTexData) {
+                    // 若尚未指派貼圖，重建材質以確保 Shader 巨集 (Macro) 正確編譯，顯現凹凸與粗糙細節
+                    if (!mesh.material.map) {
+                        const oldMat = mesh.material;
+                        const mat = new THREE.MeshPhysicalMaterial({
+                            color: presetDef.color,
+                            map: tex.map,
+                            roughnessMap: tex.roughnessMap || null,
+                            normalMap: tex.normalMap || null,
+                            roughness: presetDef.roughness,
+                            metalness: presetDef.metalness,
+                            clearcoat: 1.0,
+                            clearcoatRoughness: 0.1,
+                            transparent: false,
+                            side: THREE.DoubleSide
+                        });
+                        if (presetDef.pbr.normalScale) {
+                            mat.normalScale = new THREE.Vector2(presetDef.pbr.normalScale[0], presetDef.pbr.normalScale[1]);
+                        }
+                        mesh.material = mat;
+                        oldMat.dispose();
+                    }
+                }
+            });
+        }
+
+        function loadPBRTextures() {
+            Object.keys(materialPresets).forEach(key => {
+                const preset = materialPresets[key];
+                if (preset.pbr) {
+                    loadedTextures[key] = { map: null, roughnessMap: null, normalMap: null };
+                    const repeat = preset.pbr.repeat || [1.0, 1.0];
+                    
+                    const promises = [];
+                    
+                    if (preset.pbr.baseColor) {
+                        promises.push(new Promise(resolve => {
+                            texLoader.load(preset.pbr.baseColor, (tex) => {
+                                tex.colorSpace = THREE.SRGBColorSpace;
+                                tex.wrapS = THREE.RepeatWrapping;
+                                tex.wrapT = THREE.RepeatWrapping;
+                                tex.repeat.set(repeat[0], repeat[1]);
+                                loadedTextures[key].map = tex;
+                                resolve();
+                            });
+                        }));
+                    }
+                    if (preset.pbr.roughnessMap) {
+                        promises.push(new Promise(resolve => {
+                            texLoader.load(preset.pbr.roughnessMap, (tex) => {
+                                tex.wrapS = THREE.RepeatWrapping;
+                                tex.wrapT = THREE.RepeatWrapping;
+                                tex.repeat.set(repeat[0], repeat[1]);
+                                loadedTextures[key].roughnessMap = tex;
+                                resolve();
+                            });
+                        }));
+                    }
+                    if (preset.pbr.normalMap) {
+                        promises.push(new Promise(resolve => {
+                            texLoader.load(preset.pbr.normalMap, (tex) => {
+                                tex.wrapS = THREE.RepeatWrapping;
+                                tex.wrapT = THREE.RepeatWrapping;
+                                tex.repeat.set(repeat[0], repeat[1]);
+                                loadedTextures[key].normalMap = tex;
+                                resolve();
+                            });
+                        }));
+                    }
+                    
+                    Promise.all(promises).then(() => {
+                        updatePreviewMaterials();
+                        if (currentTransitionPresetKey === key) applyCurrentParamsToModel();
+                    });
+                }
+            });
+        }
+        let darkBgFlat = null, darkBgEnv = null;
+        let lightBgFlat = null, lightBgEnv = null;
+        let hdriTexture = null;
+        let pbrHdriTexture = null;
+
+        function updateBackgroundCover() {
+            const canvasAspect = window.innerWidth / window.innerHeight;
+            [darkBgFlat, lightBgFlat].forEach(tex => {
+                if (tex && tex.image) {
+                    const imgAspect = tex.image.width / tex.image.height;
+                    let repeatX = 1, repeatY = 1;
+                    let offsetX = 0, offsetY = 0;
+                    if (canvasAspect > imgAspect) {
+                        repeatY = imgAspect / canvasAspect;
+                        offsetY = (1 - repeatY) / 2;
+                    } else {
+                        repeatX = canvasAspect / imgAspect;
+                        offsetX = (1 - repeatX) / 2;
+                    }
+                    tex.repeat.set(repeatX, repeatY);
+                    tex.offset.set(offsetX, offsetY);
+                }
+            });
+        }
+        window.addEventListener('resize', updateBackgroundCover);
+
+        function updateEnvironmentMap() {
+            if (!scene) return;
+            const isPBR = currentTransitionPresetKey === 'WOOD' || currentTransitionPresetKey === 'ROCK_MOSS';
+            
+            if (isPBR && pbrHdriTexture) {
+                // PBR 專屬 HDRI (forest)
+                scene.environment = pbrHdriTexture;
+            } else if (!isPBR && hdriTexture) {
+                // 其他材質原本的 HDRI (monochrome)
+                scene.environment = hdriTexture;
+            } else {
+                // Fallback 防呆
+                const isDark = document.body.getAttribute('data-theme') === 'dark';
+                scene.environment = isDark ? (darkBgEnv || null) : (lightBgEnv || null);
+            }
+        }
+
+        texLoader.load('./3D_reference/3D_lab_black_BG.png', (tex) => {
+            tex.colorSpace = THREE.SRGBColorSpace;
+            darkBgFlat = tex.clone();
+            darkBgFlat.needsUpdate = true;
+            darkBgFlat.mapping = THREE.UVMapping;
+            darkBgEnv = tex.clone();
+            darkBgEnv.needsUpdate = true;
+            darkBgEnv.mapping = THREE.EquirectangularReflectionMapping;
+            updateBackgroundCover();
+            if(document.body.getAttribute('data-theme') === 'dark') {
+                scene.background = darkBgFlat;
+                updateEnvironmentMap();
+            }
+        });
+
+        texLoader.load('./3D_reference/3D_lab_white_BG.png', (tex) => {
+            tex.colorSpace = THREE.SRGBColorSpace;
+            lightBgFlat = tex.clone();
+            lightBgFlat.needsUpdate = true;
+            lightBgFlat.mapping = THREE.UVMapping;
+            lightBgEnv = tex.clone();
+            lightBgEnv.needsUpdate = true;
+            lightBgEnv.mapping = THREE.EquirectangularReflectionMapping;
+            updateBackgroundCover();
+            if(document.body.getAttribute('data-theme') === 'light') {
+                scene.background = null; // Light mode 讓 WebGL 背景透明，由 CSS #bg-image-layer 負責背景圖
+                updateEnvironmentMap();
+            }
+        });
+
+        // 載入原本的 HDRI (monochrome) 提供非 PBR 材質環境反射
+        const rgbeLoader = new RGBELoader();
+        rgbeLoader.load('./3D_reference/monochrome_studio_01_4k.hdr', (tex) => {
+            tex.mapping = THREE.EquirectangularReflectionMapping;
+            hdriTexture = tex;
+            updateEnvironmentMap();
+            
+            // 主動預加載轉場影片，防止切換時產生載入延遲與閃爍
+            const vB2W = document.getElementById('vid-bg-b2w');
+            const vW2B = document.getElementById('vid-bg-w2b');
+            if (vB2W) vB2W.load();
+            if (vW2B) vW2B.load();
+
+            // 初始化卡片材質預覽與 3D 轉場特效
+            initTransitionEffects();
+            initCardPreviews();
+            loadPBRTextures();
+        });
+
+        // 載入 PBR 專用的 EXR (forest.exr)
+        exrLoader.load('./3D_reference/forest.exr', (tex) => {
+            tex.mapping = THREE.EquirectangularReflectionMapping;
+            pbrHdriTexture = tex;
+            updateEnvironmentMap();
+        });
+
+        let currentImportedScene = null;
+
+        function loadModel(url, isCustom = false) {
+            loader.load(url, (gltf) => {
+                if (currentImportedScene) {
+                    scene.remove(currentImportedScene);
+                    // 若有需要，可以進行深度 dispose 清理，這裡簡化處理
+                }
+                
+                currentImportedScene = gltf.scene;
+                scene.add(currentImportedScene); 
+                
+                // 儲存整個場景的原始位移與縮放基準，供 Calibration 偏移與整體縮放使用
+                currentImportedScene.userData.originPosition = currentImportedScene.position.clone();
+                currentImportedScene.userData.originScale = currentImportedScene.scale.x || 1.0;
+                
+                // 1. 處理相機 (僅預設場景處理)
+                if (!isCustom) {
+                    let importedCamera = null;
+                    currentImportedScene.traverse((child) => {
+                        if (child.isPerspectiveCamera) importedCamera = child;
+                    });
+
+                    if (importedCamera) {
+                        camera.position.copy(importedCamera.position);
+                        camera.quaternion.copy(importedCamera.quaternion);
+                        camera.fov = 19.2;
+                        camera.updateProjectionMatrix();
+                    }
+                }
+
+                // 2. 物件材質與邏輯處理
+                let foundMain = false;
+                currentImportedScene.traverse(child => {
+                    if (child.isMesh) {
+                        // 強制計算幾何體的切線向量 (Tangent)
+                        // 這是 Normal Map 能夠正確對位並產生立體陰影的關鍵
+                        // 即使原 GLB 內有 Tangent，強制交由 Three.js 根據 UV 重算可避免許多相容性問題
+                        if (child.geometry && child.geometry.hasAttribute('uv')) {
+                            child.geometry.computeTangents();
+                        }
+
+                        // 尋找主模型：預設為名稱 LOGO 的物件，自訂模型則取第一個 Mesh
+                        if ((!isCustom && child.name === 'LOGO') || (isCustom && !foundMain)) {
+                            mainModel = child;
+                            foundMain = true;
+                            
+                            // 應用材質參數
+                            applyCurrentParamsToModel();
+                            
+                            mainModel.castShadow = true;
+                            mainModel.receiveShadow = true;
+                            
+                            if (isCustom) {
+                                // 將自訂模型置中並調整大小
+                                const box = new THREE.Box3().setFromObject(mainModel);
+                                const center = box.getCenter(new THREE.Vector3());
+                                const size = box.getSize(new THREE.Vector3());
+                                const maxDim = Math.max(size.x, Math.max(size.y, size.z));
+                                const scale = 8 / maxDim; // 縮放至適合大小
+                                mainModel.scale.setScalar(scale);
+                                mainModel.position.sub(center.multiplyScalar(scale));
+                            }
+                            
+                            // 【關鍵修復】：儲存載入/自適應計算完畢後的原始 Position、Scale 與 Y 軸基準，用於防止跑位
+                            mainModel.userData.originScale = mainModel.scale.x;
+                            mainModel.userData.originPosition = mainModel.position.clone();
+                            mainModel.userData.originY = mainModel.position.y;
+                            
+                            // 初始化旋轉基準點：以模型載入時的原始旋轉為準
+                            identityQuat.copy(mainModel.quaternion);
+                            targetQuat.copy(mainModel.quaternion);
+                        } else if (!isCustom) {
+                            // 底座物件：改為影子接收材質，隱藏模型本身但保留影子
+                            const baseShadowMat = new THREE.ShadowMaterial({ 
+                                opacity: 0.45 
+                            });
+                            child.material = baseShadowMat;
+                            shadowMaterials.push({ material: baseShadowMat, baseOpacity: 0.45 });
+                            child.receiveShadow = true;
+                        }
+                    }
+                });
+                
+                if (isCustom && !foundMain) {
+                    console.warn("上傳的模型中找不到 Mesh 結構");
+                }
+            });
+        }
+
+        // 初始載入專案預設模型
+        loadModel('./3D modeling/3D_Lab_all.glb', false);
+
+        // 強化動態聚光燈 (Spotlight)
+        shadowLight = new THREE.SpotLight(0xffffff, 150); // 提高強度以補償高度羽化
+        shadowLight.position.set(2, 12, 2);
+        shadowLight.angle = Math.PI / 8; // 稍微拉寬一點點，配合高度羽化
+        shadowLight.penumbra = 1.0; // 極致羽化
+        shadowLight.decay = 2; 
+        shadowLight.distance = 50;
+        
+        shadowLight.castShadow = true;
+        // 優化影子品質 (羽化邊緣)
+        shadowLight.shadow.mapSize.width = 2048;
+        shadowLight.shadow.mapSize.height = 2048;
+        shadowLight.shadow.camera.near = 1;
+        shadowLight.shadow.camera.far = 50;
+        shadowLight.shadow.focus = 1;
+        shadowLight.shadow.radius = 12; // 增加 radius 以實現邊緣柔和羽化 (Feather)
+        
+        scene.add(shadowLight);
+        scene.add(shadowLight.target); // 確保 target 已加入場景
+        shadowLight.target.position.set(0, 0, 0);
+
+        // --- 綁定卡片點擊事件 (玻璃罩與煙霧協調轉場系統) ---
+        document.querySelectorAll('.showcase-card').forEach(card => {
+            card.addEventListener('click', () => {
+                if (isMaterialTransitioning || isTransitioning) return;
+                
+                const presetKey = card.getAttribute('data-material-key');
+                const preset = materialPresets[presetKey];
+                
+                if (preset) {
+                    isMaterialTransitioning = true;
+                    
+                    // 記錄舊材質的當前參數狀態，用於轉場插值
+                    oldPreset = { ...params };
+                    newPreset = { ...preset };
+                    currentTransitionPresetKey = presetKey;
+                    
+                    // 根據使用者要求，所有材質一律使用最新的 Cyberpunk 畫面撕裂過場特效
+                    sharedTransitionPreset.value = 0.0;
+                    
+                    // 1. 鎖定所有卡片與 UI 切換，防止重複點擊
+                    document.querySelectorAll('.showcase-card').forEach(c => {
+                        c.classList.add('transition-lock');
+                        c.classList.remove('active');
+                    });
+                    card.classList.add('active'); // 標示目前選中
+                    
+                    // 點擊後 0.3 秒，平滑捲動回到首屏 (3D模型區)
+                    setTimeout(() => {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }, 300);
+                    
+                    // 2. 啟動轉場時間軸動畫 (總計 4.5 秒，放慢特效)
+                    let startTime = null;
+                    // 根據視覺順暢度，將過長且拖泥帶水的 4.5 秒縮短為乾脆俐落的 1.8 秒 (1800ms)
+                    const duration = 1800;
+                    let swapped = false;
+                    
+                    function transitionStep(timestamp) {
+                        if (!startTime) startTime = timestamp;
+                        const elapsed = timestamp - startTime;
+                        const progress = Math.min(elapsed / duration, 1.0);
+                        
+                        transitionProgress = progress; // 驅動 animate() 中的玻璃罩 Y 座標與煙霧粒子動畫
+                        
+                        // 臨界中心點 (0.35)，因前段變快，此時消融已達極點
+                        if (progress >= 0.35 && !swapped) {
+                            swapped = true;
+                            
+                            // 套用新材質 Preset 參數
+                            Object.assign(params, preset);
+                            applyCurrentParamsToModel();
+                            updateEnvironmentMap();
+                            
+                            // 同步 自定義 UI 面板
+                            updateCustomUIValues();
+                            
+                            // 只有 WATER 材質開啟焦散光斑效果
+                            if (presetKey === 'WATER') {
+                                targetCausticIntensity = 1.0;
+                            } else {
+                                targetCausticIntensity = 0.0;
+                            }
+                            
+                            // 自動平滑滾動回網頁頂部 (首屏) 方便預覽
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                        
+                        if (progress < 1.0) {
+                            requestAnimationFrame(transitionStep);
+                        } else {
+                            // 轉場結束，恢復與解鎖
+                            transitionProgress = 0.0;
+                            isMaterialTransitioning = false;
+                            
+                            // 解鎖卡片
+                            document.querySelectorAll('.showcase-card').forEach(c => {
+                                c.classList.remove('transition-lock');
+                            });
+                            
+                            console.log('[Material Transition] Completed successfully');
+                        }
+                    }
+                    
+                    requestAnimationFrame(transitionStep);
+                }
+            });
+        });
+        
+        // --- 程式化焦散光斑 (Procedural Caustics Gobo) ---
+        const causticTarget = new THREE.WebGLRenderTarget(512, 512, {
+            minFilter: THREE.LinearFilter,
+            magFilter: THREE.LinearFilter,
+            format: THREE.RGBAFormat
+        });
+        
+        const causticCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const causticScene = new THREE.Scene();
+        
+        let targetCausticIntensity = 0.0;
+        let currentCausticIntensity = 0.0;
+
+        const causticShader = {
+            uniforms: {
+                uTime: { value: 0.0 },
+                uIntensity: { value: 0.0 }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                void main() {
+                    vUv = uv;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform float uTime;
+                uniform float uIntensity;
+                varying vec2 vUv;
+
+                vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+                vec3 permute(vec3 x) { return mod289(((x*34.0)+1.0)*x); }
+                float snoise(vec2 v) {
+                    const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+                    vec2 i  = floor(v + dot(v, C.yy));
+                    vec2 x0 = v - i + dot(i, C.xx);
+                    vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                    vec4 x12 = x0.xyxy + C.xxzz;
+                    x12.xy -= i1;
+                    i = mod289(i);
+                    vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+                    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+                    m = m*m; m = m*m;
+                    vec3 x = 2.0 * fract(p * C.www) - 1.0;
+                    vec3 h = abs(x) - 0.5;
+                    vec3 ox = floor(x + 0.5);
+                    vec3 a0 = x - ox;
+                    m *= 1.79284291400159 - 0.85373472095314 * (a0*a0 + h*h);
+                    vec3 g;
+                    g.x  = a0.x  * x0.x  + h.x  * x0.y;
+                    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+                    return 130.0 * dot(m, g);
+                }
+
+                float caustic(vec2 uv, float time) {
+                    vec2 p = uv * 3.0;
+                    float t = time * 0.3;
+                    float n = snoise(p - vec2(t, 0.0));
+                    n += 0.5 * snoise(p * 2.0 + vec2(0.0, t));
+                    n += 0.25 * snoise(p * 4.0 - vec2(t, t));
+                    n = abs(n);
+                    float c = 1.0 - n;
+                    return pow(c, 3.0);
+                }
+
+                void main() {
+                    vec2 centerOffset = vUv - 0.5;
+                    float dist = length(centerOffset);
+                    if (dist > 0.5) discard;
+                    float c = caustic(vUv, uTime);
+                    float mask = smoothstep(0.5, 0.1, dist);
+                    vec3 causticColor = vec3(c * mask, c * mask, c * mask);
+                    vec3 finalColor = mix(vec3(1.0), causticColor, uIntensity);
+                    gl_FragColor = vec4(finalColor, 1.0);
+                }
+            `
+        };
+        const causticMat = new THREE.ShaderMaterial(causticShader);
+        const causticPlane = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), causticMat);
+        causticScene.add(causticPlane);
+        shadowLight.map = causticTarget.texture;
+
+        // 4. 動畫迴圈
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const time = clock.getElapsedTime();
+
+            if (currentImportedScene) {
+                if (currentImportedScene.userData.originPosition) {
+                    currentImportedScene.position.x = currentImportedScene.userData.originPosition.x + params.offsetX;
+                    currentImportedScene.position.y = currentImportedScene.userData.originPosition.y + params.offsetY;
+                    currentImportedScene.position.z = currentImportedScene.userData.originPosition.z + params.offsetZ;
+                }
+                if (currentImportedScene.userData.originScale) {
+                    currentImportedScene.scale.setScalar(currentImportedScene.userData.originScale * params.modelScale);
+                }
+            }
+
+            currentCausticIntensity = THREE.MathUtils.lerp(currentCausticIntensity, targetCausticIntensity, 0.05);
+            causticMat.uniforms.uTime.value = time;
+            causticMat.uniforms.uIntensity.value = currentCausticIntensity;
+            
+            renderer.setRenderTarget(causticTarget);
+            renderer.render(causticScene, causticCamera);
+            renderer.setRenderTarget(null);
+            
+            if (mainModel) {
+                mainModel.position.y = mainModel.userData.originY + Math.sin(time * 1.5) * 0.15;
+                if (mainModel.userData.originPosition) {
+                    mainModel.position.x = mainModel.userData.originPosition.x;
+                    mainModel.position.z = mainModel.userData.originPosition.z;
+                }
+
+                if (!isDragging) {
+                    dragVelocity.multiplyScalar(0.92);
+                }
+                
+                if (Math.abs(dragVelocity.x) > 0.0001 || Math.abs(dragVelocity.y) > 0.0001) {
+                    const qX = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), dragVelocity.x);
+                    const qY = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), dragVelocity.y);
+                    targetQuat.multiplyQuaternions(qX, targetQuat);
+                    targetQuat.multiplyQuaternions(qY, targetQuat);
+                }
+                
+                if (!isDragging) {
+                    targetQuat.slerp(identityQuat, 0.015);
+                }
+                
+                targetHoverQuat.setFromEuler(new THREE.Euler(mouse.y * 0.25, mouse.x * 0.25, 0));
+                currentHoverQuat.slerp(targetHoverQuat, 0.03);
+                
+                mainModel.quaternion.copy(targetQuat).multiply(currentHoverQuat);
+            }
+
+            if (shadowLight) {
+                const t2 = clock.getElapsedTime() * 0.4;
+                const radius = 3;
+                shadowLight.position.x = Math.cos(t2) * radius;
+                shadowLight.position.z = Math.sin(t2) * radius;
+                shadowLight.position.y = 12;
+            }
+
+            if (Math.abs(shadowMultiplier - targetShadowMultiplier) > 0.001) {
+                shadowMultiplier += (targetShadowMultiplier - shadowMultiplier) * 0.06;
+                shadowMaterials.forEach(item => {
+                    if (item.material) {
+                        item.material.opacity = item.baseOpacity * shadowMultiplier;
+                    }
+                });
+                if (shadowLight) {
+                    shadowLight.intensity = 150 * shadowMultiplier;
+                }
+            }
+
+            // --- 3D 材質自訂轉場特效系統 (A, B, C 三種視覺方案，已移除粒子特效) ---
+            if (isMaterialTransitioning && mainModel) {
+                sharedTime.value = time;
+                const pVal = sharedTransitionPreset.value;
+
+                // 方案 A (WATER): 頂點波浪起伏 + Noise Dissolve
+                if (pVal === 0.0) {
+                    let dVal = 0.0;
+                    let jitterVal = 0.0;
+                    // 讓「消融」與「全螢幕 RGB 撕裂」的時間軸完全重疊
+                    // 避免產生「消失 -> 空白畫面撕裂 -> 出現」的斷層感
+                    if (transitionProgress < 0.35) {
+                        let localT = transitionProgress / 0.35;
+                        dVal = Math.pow(localT, 1.5); // 模型開始消融
+                        jitterVal = Math.pow(localT, 1.5); // 畫面撕裂「同時」逐漸增強
+                    } else {
+                        let appearProg = (transitionProgress - 0.35) / 0.65;
+                        dVal = Math.pow(1.0 - appearProg, 1.8); // 模型開始浮現
+                        // 畫面撕裂不要瞬間歸零，而是伴隨著模型浮現的過程「同時」逐漸淡出
+                        jitterVal = Math.pow(1.0 - appearProg, 3.0); 
+                    }
+                    sharedDissolve.value = THREE.MathUtils.smoothstep(dVal, 0.0, 1.0);
+                    sharedDistortion.value = jitterVal * 0.45;
+                    sharedHoloTransition.value = -2.0;
+                    
+                    // 賽博龐克 2077 風格全螢幕撕裂 (CyberGlitchShader)
+                    rgbShiftPass.uniforms['time'].value = time;
+                    const leftPanel = document.getElementById('left-panel');
+                    if (jitterVal > 0.05) {
+                        // 利用低頻 sine 產生脈衝式的 Glitch
+                        let slowGlitch = Math.sin(time * 25.0);
+                        if (slowGlitch > 0.5) {
+                            rgbShiftPass.uniforms['amount'].value = jitterVal; // 傳遞完整的 jitterVal 給 CyberGlitchShader
+                            
+                            // 左側面板 CSS 錯位同步
+                            if (leftPanel) {
+                                leftPanel.style.transform = `translate(${(Math.random()-0.5)*15}px, 0px)`; // 只做水平位移
+                                leftPanel.style.filter = `drop-shadow(5px 0 0 rgba(255,0,255,0.7)) drop-shadow(-5px 0 0 rgba(0,255,255,0.7))`;
+                            }
+                        } else {
+                            rgbShiftPass.uniforms['amount'].value = 0.0;
+                            if (leftPanel) {
+                                leftPanel.style.transform = 'translate(0, 0)';
+                                leftPanel.style.filter = 'none';
+                            }
+                        }
+                    } else {
+                        rgbShiftPass.uniforms['amount'].value = 0.0;
+                        if (leftPanel) {
+                            leftPanel.style.transform = 'translate(0, 0)';
+                            leftPanel.style.filter = 'none';
+                        }
+                    }
+
+                    const origS = mainModel.userData.originScale || 1.0;
+                    mainModel.scale.setScalar(origS);
+                }
+                // 方案 C (HOLO): 掃描線消融
+                else if (pVal === 2.0) {
+                    let holoVal = -2.0;
+                    if (transitionProgress < 0.5) {
+                        holoVal = -2.0 + 4.0 * (transitionProgress / 0.5);
+                    } else {
+                        holoVal = 2.0 - 4.0 * ((transitionProgress - 0.5) / 0.5);
+                    }
+                    sharedHoloTransition.value = holoVal;
+                    sharedDissolve.value = 0.0;
+                    sharedDistortion.value = 0.0;
+                    const origS = mainModel.userData.originScale || 1.0;
+                    mainModel.scale.setScalar(origS);
+                }
+            } else if (!isMaterialTransitioning && mainModel) {
+                sharedDissolve.value = 0.0;
+                sharedDistortion.value = 0.0;
+                sharedHoloTransition.value = -2.0;
+                rgbShiftPass.uniforms['amount'].value = 0.0;
+                const leftPanel = document.getElementById('left-panel');
+                if (leftPanel) {
+                    leftPanel.style.transform = 'translate(0, 0)';
+                    leftPanel.style.filter = 'none';
+                }
+                const origS = mainModel.userData.originScale || 1.0;
+                mainModel.scale.setScalar(origS);
+            }
+
+            // --- 粒子系統動態更新 (Holographic Radial Dissolve) ---
+            if (dissolveParticles) {
+                const positions = dissolveParticles.geometry.attributes.position.array;
+                
+                if (isMaterialTransitioning && sharedTransitionPreset.value === 0.0) {
+                    // 根據轉場階段切換特效顏色：消失用舊顏色，出現用新顏色
+                    const activeColorHex = (transitionProgress < 0.35) 
+                        ? (oldPreset.effectColor || oldPreset.color || 0x00d0ff)
+                        : (newPreset.effectColor || newPreset.color || 0x00d0ff);
+                    const targetBaseColor = new THREE.Color(activeColorHex);
+                    sharedDissolveColor.value.copy(targetBaseColor);
+                    
+                    // 如果正在使用 Radial Dissolve，噴發粒子
+                    const currentRadius = sharedDissolve.value * 2.5;
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        if (Math.random() < 0.06) { // 隨機生成新粒子
+                            const theta = Math.random() * Math.PI * 2;
+                            const phi = Math.acos((Math.random() * 2) - 1);
+                            const r = currentRadius + (Math.random() * 0.4 - 0.2); // 在消融邊界周圍
+                            
+                            positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
+                            positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
+                            positions[i*3+2] = r * Math.cos(phi);
+                            
+                            // 賦予向外的輻射初速度，加上輕微向上飄浮
+                            particleVelocities[i*3] = positions[i*3] * 0.15 + (Math.random()-0.5)*0.5;
+                            particleVelocities[i*3+1] = positions[i*3+1] * 0.15 + Math.random()*0.8;
+                            particleVelocities[i*3+2] = positions[i*3+2] * 0.15 + (Math.random()-0.5)*0.5;
+                        } else {
+                            // 更新現有粒子位置
+                            positions[i*3] += particleVelocities[i*3] * 0.016;
+                            positions[i*3+1] += particleVelocities[i*3+1] * 0.016;
+                            positions[i*3+2] += particleVelocities[i*3+2] * 0.016;
+                            
+                            // 阻尼減速
+                            particleVelocities[i*3] *= 0.92;
+                            particleVelocities[i*3+1] *= 0.92;
+                            particleVelocities[i*3+2] *= 0.92;
+                        }
+                    }
+                    
+                    // 動態調整顏色，使用材質主色並在最高潮時泛白發亮 (稍微降低泛白程度，保留色彩)
+                    const t = sharedDissolve.value;
+                    const pColor = targetBaseColor.clone().lerp(new THREE.Color(0xffffff), t * 0.5);
+                    dissolveParticles.material.color.copy(pColor);
+                    dissolveParticles.material.opacity = 0.8;
+                } else {
+                    // 非轉場狀態，粒子漸漸向上消散
+                    for (let i = 0; i < particleCount; i++) {
+                        if (positions[i*3+1] < 100) {
+                            positions[i*3+1] += 0.08;
+                        }
+                    }
+                    dissolveParticles.material.opacity *= 0.85;
+                }
+                
+                dissolveParticles.geometry.attributes.position.needsUpdate = true;
+            }
+
+            composer.render();
+        }
+        animate();
+
+        // 5. 響應式調整
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            composer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        // 6. 主題切換與背景影片轉場控制
+        const themeToggle = document.getElementById('theme-toggle');
+        const switcherContainer = document.querySelector('.theme-switcher');
+        const body = document.body;
+        const vidBgB2W = document.getElementById('vid-bg-b2w');
+        const vidBgW2B = document.getElementById('vid-bg-w2b');
+        let isTransitioning = false;
+        let transitionFallbackTimeout = null;
+
+        // 統一解鎖與背景/影子復原函式
+        function unlockThemeToggle(theme) {
+            if (transitionFallbackTimeout) {
+                clearTimeout(transitionFallbackTimeout);
+                transitionFallbackTimeout = null;
+            }
+            isTransitioning = false;
+            themeToggle.style.pointerEvents = 'auto';
+            if (switcherContainer) {
+                switcherContainer.classList.remove('transition-lock');
+            }
+            // 還原 WebGL 靜態背景與影子
+            if (theme === 'light') {
+                scene.background = null; // Light mode 讓 WebGL 背景透明，由 CSS #bg-image-layer 負責
+                targetShadowMultiplier = 0.3; // 淺色限制影子在 0.3 達到減淡效果
+            } else {
+                scene.background = darkBgFlat;
+                targetShadowMultiplier = 1.0; // 深色模式恢復完整影子強度
+            }
+            updateEnvironmentMap();
+            console.log(`Transition to ${theme} completed. Switcher unlocked.`);
+        }
+
+        // 註冊播放結束監聽器 (僅在初始化時綁定一次，避免重複註冊)
+        vidBgB2W.addEventListener('ended', () => {
+            vidBgB2W.classList.remove('active');
+            unlockThemeToggle('light');
+        });
+
+        vidBgW2B.addEventListener('ended', () => {
+            vidBgW2B.classList.remove('active');
+            unlockThemeToggle('dark');
+        });
+
+        themeToggle.addEventListener('click', () => {
+            if (isTransitioning || isMaterialTransitioning) return;
+            isTransitioning = true;
+            themeToggle.style.pointerEvents = 'none';
+            if (switcherContainer) {
+                switcherContainer.classList.add('transition-lock');
+            }
+
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            // 0. 觸發影子淡出
+            targetShadowMultiplier = 0.0;
+            
+            // 1. 設置 UI 主題，觸發 CSS 變數與大背景圖改變（被轉場影片遮蓋）
+            body.setAttribute('data-theme', newTheme);
+            
+            // 2. 呼叫模型更新，並傳入 true 跳過背景設定，這會將 scene.background 設為 null，使 WebGL 背景透明
+            updateModelTheme(newTheme, true);
+
+            // 3. 設置最長 3.5 秒防呆超時解鎖 (預防某些瀏覽器未正確觸發 ended 事件)
+            transitionFallbackTimeout = setTimeout(() => {
+                if (isTransitioning) {
+                    console.warn('Transition video ended event stalled. Force unlocking...');
+                    if (newTheme === 'light') {
+                        vidBgB2W.classList.remove('active');
+                        unlockThemeToggle('light');
+                    } else {
+                        vidBgW2B.classList.remove('active');
+                        unlockThemeToggle('dark');
+                    }
+                }
+            }, 3500);
+
+            // 4. 播放轉場影片
+            if (newTheme === 'light') {
+                vidBgW2B.classList.remove('active');
+                vidBgB2W.classList.add('active');
+                vidBgB2W.currentTime = 0;
+                
+                vidBgB2W.play().then(() => {
+                    console.log('black_to_white.mp4 started playing');
+                }).catch(e => {
+                    console.error('Video play error:', e);
+                    unlockThemeToggle('light');
+                });
+            } else {
+                vidBgB2W.classList.remove('active');
+                vidBgW2B.classList.add('active');
+                vidBgW2B.currentTime = 0;
+                
+                vidBgW2B.play().then(() => {
+                    console.log('white_to_black.mp4 started playing');
+                }).catch(e => {
+                    console.error('Video play error:', e);
+                    unlockThemeToggle('dark');
+                });
+            }
+        });
+
+        function updateModelTheme(theme, skipBackgroundUpdate = false) {
+            if (!mainModel) return;
+            
+            if (theme === 'light') {
+                // 淺色模式：深藍灰色，增強對比與質感
+                params.color = '#1e293b'; 
+                params.transmission = 0.95;
+                params.ior = 1.52;
+                params.thickness = 5.0;
+                params.roughness = 0.05;
+                params.metalness = 0.1;
+                params.iridescence = 0.0;
+                params.attenuationDistance = 0.0;
+                params.isToon = false;
+            } else {
+                // 深色模式：恢復白色 (冰晶質感)
+                params.color = '#ffffff';
+                params.transmission = 1.0; // 必須為 1.0 才是全透明玻璃
+                params.ior = 1.5;
+                params.thickness = 3.0;
+                params.roughness = 0.05; // 極低粗糙度，避免霧化
+                params.metalness = 0.0;  // 玻璃不該有金屬感
+                params.iridescence = 0.0;
+                params.attenuationDistance = 0.0;
+                params.isToon = false;
+            }
+            
+            // 強制更新模型材質與同步 UI
+            updateCustomUIValues();
+            if (typeof applyCurrentParamsToModel === 'function') {
+                applyCurrentParamsToModel();
+            }
+            
+            // 切換背景與環境映射
+            if (!skipBackgroundUpdate) {
+                if (theme === 'light' && lightBgFlat) {
+                    scene.background = null; // Light mode 讓 WebGL 背景透明，由 CSS #bg-image-layer 負責
+                    scene.environment = hdriTexture || lightBgEnv;
+                } else if (theme === 'dark' && darkBgFlat) {
+                    scene.background = darkBgFlat;
+                    scene.environment = hdriTexture || darkBgEnv;
+                }
+            } else {
+                // 轉場中：將 WebGL 背景設為 null（透明），使 HTML 背景影片能被看見
+                scene.background = null;
+                // 維持環境映射，使玻璃依然有精緻反射
+                if (theme === 'light' && lightBgEnv) {
+                    scene.environment = hdriTexture || lightBgEnv;
+                } else if (theme === 'dark' && darkBgEnv) {
+                    scene.environment = hdriTexture || darkBgEnv;
+                }
+            }
+            
+            // 同步環境強度
+            renderer.toneMappingExposure = theme === 'light' ? 0.8 : 1.2;
+        }
+
+        // 7. 導覽列捲動邏輯
+        function initNavScroll() {
+            const nav = document.getElementById('main-nav');
+            const hero = document.getElementById('hero-section');
+            if (!nav) return;
+            
+            window.addEventListener('scroll', () => {
+                const threshold = hero ? hero.offsetHeight - 80 : 80;
+                nav.classList.toggle('scrolled', window.scrollY >= threshold);
+            }, { passive: true });
+        }
+        initNavScroll();
+
+    </script>
+</body>
+</html>

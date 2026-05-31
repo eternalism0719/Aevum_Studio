@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projects | AEVUM STUDIO</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <script src="page-transition-v4.js"></script>
+</head>
+<body class="projects-page cyber-theme no-cursor">
+    <!-- Ambient Texture Layers -->
+    <div class="noise-overlay"></div>
+    <div class="screen-vignette"></div>
+    <div class="spotlight"></div>
+    <canvas id="grid-canvas"></canvas>
+
+    <!-- Custom Cursor -->
+    <div class="cursor-outer" id="cursor-outer"></div>
+    <div class="cursor-inner" id="cursor-inner"></div>
+    <div class="cursor-trail" id="cursor-trail"></div>
+    <div class="cursor-text" id="cursor-text">VIEW</div>
+
+    <!-- HUD Overlay Decorations -->
+    <div class="hud-corners top-left" aria-hidden="true">ST_772 // DATA_SYNC</div>
+    <div class="hud-corners top-right" aria-hidden="true">VFX_CORE // ACTIVE</div>
+    <div class="hud-corners bottom-left" aria-hidden="true">OS_VER_3.0.0</div>
+    <div class="hud-corners bottom-right" aria-hidden="true">LATENCY: 2ms</div>
+
+    <!-- Navigation -->
+    <header class="glass-nav" id="main-nav">
+        <div class="nav-left-wrap">
+            <a href="index.html" class="logo" aria-label="Aevum Studio Home">
+                <img src="images/LOGO_pj_BG.png" alt="" class="logo-img">
+                AEVUM <span>STUDIO</span>
+                <div class="logo-pulse"></div>
+            </a>
+        </div>
+        
+        <nav id="nav-links" aria-label="Main navigation">
+            <a href="project.html" class="nav-link active">PROJECT</a>
+            <a href="brand.html" class="nav-link">BRAND</a>
+            <a href="3d_lab.html" class="nav-link">EXPERIMENT</a>
+            <a href="games.html" class="nav-link">GAMES</a>
+        </nav>
+    </header>
+
+    <!-- End of Navigation -->
+
+    <!-- Main Site Wrapper -->
+    <div id="site-wrapper">
+
+        <main class="container page-content" style="padding-top: 140px;">
+        <section class="gallery-section reveal-section">
+            <div class="section-header">
+                <span class="section-eyebrow">GALLERY</span>
+                <h1 class="section-title">PROJECT <span>ARCHIVE</span></h1>
+                <p class="section-desc">Selected commercial works and technical breakdowns spanning multiple industries.</p>
+            </div>
+
+            <!-- Moved Filter Tabs from index to here -->
+            <div class="filter-tabs" id="filter-tabs" role="tablist" aria-label="Project categories">
+                <button class="filter-tab active" data-filter="all" role="tab" aria-selected="true">ALL</button>
+                <button class="filter-tab" data-filter="houdini" role="tab" aria-selected="false">HOUDINI</button>
+                <button class="filter-tab" data-filter="blender" role="tab" aria-selected="false">BLENDER</button>
+                <button class="filter-tab" data-filter="motion" role="tab" aria-selected="false">MOTION</button>
+            </div>
+
+            <div class="project-grid" id="project-list" role="list">
+                <!-- Injected via main.js (no data-limit here) -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal system identical to index.html -->
+    <div id="video-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-backdrop" id="modal-backdrop"></div>
+        <div class="modal-panel">
+            <button class="close-modal" id="close-modal-btn" aria-label="Close modal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+            <div class="modal-video-wrap">
+                <video controls id="modal-video" preload="metadata"></video>
+                <div class="modal-scan-overlay" aria-hidden="true"></div>
+            </div>
+            <div class="modal-info">
+                <div class="modal-info-left">
+                    <span class="modal-eyebrow">PROJECT DETAILS</span>
+                    <h3 id="modal-title">PROJECT NAME</h3>
+                    <p class="modal-role">Role: <span id="modal-role">Lead 3D Artist</span></p>
+                    <p class="modal-desc" id="modal-desc">Detailed work content and VFX breakdown.</p>
+                </div>
+                <div class="modal-tags" id="modal-tags"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="site-footer" id="contact">
+        <div class="footer-inner">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <img src="images/PJ_LOGO.png" alt="Aevum Studio Logo" class="footer-logo-img">
+                        AEVUM <span>STUDIO</span>
+                    </div>
+                    <div class="footer-location">
+                        <span class="badge-dot"></span>
+                        TAIPEI, TAIWAN // APAC
+                    </div>
+                    <p class="footer-tagline">Available for commercial work worldwide.</p>
+                </div>
+                <div class="footer-links-col">
+                    <h4 class="footer-col-title">NAVIGATE</h4>
+                    <a href="index.html" class="footer-link">Home</a>
+                    <a href="project.html" class="footer-link">Portfolio Projects</a>
+                    <a href="brand.html" class="footer-link">Brand Story</a>
+                    <a href="3d_lab.html" class="footer-link">Experiment</a>
+                    <a href="games.html" class="footer-link">Games</a>
+                </div>
+                <div class="footer-links-col">
+                    <h4 class="footer-col-title">CONTACT</h4>
+                    <h4 class="footer-col-title" style="margin-top: 10px;">EMAIL</h4>
+                    <a href="mailto:eternalframePJ@gmail.com" class="footer-link">eternalframePJ@gmail.com</a>
+                    <a href="#" class="footer-link" id="footer-artstation">ArtStation</a>
+                    <a href="#" class="footer-link" id="footer-linkedin">LinkedIn</a>
+                    <a href="https://vimeo.com/user256640911" target="_blank" class="footer-link" id="footer-vimeo">Vimeo</a>
+                </div>
+                <div class="footer-cta-col">
+                    <h4 class="footer-col-title">START A PROJECT</h4>
+                    <p class="footer-cta-text">Open to freelance & studio collaboration.</p>
+                    <a href="mailto:eternalframePJ@gmail.com" class="btn-primary btn-small" id="footer-contact-btn">
+                        GET IN TOUCH
+                        <span class="btn-line"></span>
+                    </a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span class="footer-copy">&copy; 2026 AEVUM STUDIO. All rights reserved.</span>
+                <span class="footer-build">BUILD: v3.0.0 // CYBER_UI</span>
+            </div>
+        </div>
+    </footer>
+    </div> <!-- Close #site-wrapper -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="main.js"></script>
+    <script src="grid-distortion.js"></script>
+    <script src="page-enter-vfx.js"></script>
+</body>
+</html>
+

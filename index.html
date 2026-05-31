@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AINA VISUALS | Senior 3D VFX Artist Portfolio</title>
+    <meta name="description" content="AINA VISUALS — Senior 3D VFX Artist specializing in high-end visual effects, Houdini simulation, Blender, and real-time rendering for commercial productions.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="page-transition-v4.js"></script>
+</head>
+<body class="cyber-theme no-cursor">
+
+    <!-- Ambient Texture Layers -->
+    <div class="noise-overlay"></div>
+    <div class="screen-vignette"></div>
+    <div class="spotlight"></div>
+    <canvas id="grid-canvas"></canvas>
+
+    <!-- Custom Cursor -->
+    <div class="cursor-outer" id="cursor-outer"></div>
+    <div class="cursor-inner" id="cursor-inner"></div>
+    <div class="cursor-trail" id="cursor-trail"></div>
+    <div class="cursor-text" id="cursor-text">VIEW</div>
+
+    <!-- HUD Overlay Decorations -->
+    <div class="hud-corners top-left" aria-hidden="true">ST_772 // DATA_SYNC</div>
+    <div class="hud-corners top-right" aria-hidden="true">VFX_CORE // ACTIVE</div>
+    <div class="hud-corners bottom-left" aria-hidden="true">OS_VER_3.0.0</div>
+    <div class="hud-corners bottom-right" aria-hidden="true">LATENCY: 2ms</div>
+
+    <!-- Preloader -->
+    <div id="preloader" role="status" aria-label="Loading portfolio">
+        <div class="preloader-bg"></div>
+        <div class="loader-content">
+            <div class="loader-logo-mark">
+                <svg viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="30,4 56,18 56,42 30,56 4,42 4,18" stroke="currentColor" stroke-width="1.5" fill="none" class="hex-outer"/>
+                    <polygon points="30,14 46,23 46,37 30,46 14,37 14,23" stroke="currentColor" stroke-width="1" fill="none" class="hex-inner"/>
+                    <circle cx="30" cy="30" r="4" fill="currentColor" class="hex-dot"/>
+                </svg>
+            </div>
+            <div class="loader-glitch" data-text="SYSTEM INITIALIZING">SYSTEM INITIALIZING</div>
+            <div class="loader-bar-container">
+                <div class="loader-bar" id="loader-bar"></div>
+                <div class="loader-bar-glow"></div>
+            </div>
+            <div class="status-tags">
+                <span class="tag" id="tag1">VFX_ENGINE: ONLINE</span>
+                <span class="tag" id="tag2">CORE_MEMORY: LOADED</span>
+                <span class="tag" id="tag3">CYBER_UI: READY</span>
+            </div>
+        </div>
+        <div class="year-counter">
+            202<div class="digit-roller">
+                <div class="digit-list" id="digit-list">
+                    <span>2</span>
+                    <span>3</span>
+                    <span>4</span>
+                    <span>5</span>
+                    <span class="final-digit">6</span>
+                </div>
+            </div>
+        </div>
+        <div class="scanline"></div>
+    </div>
+
+    <!-- Navigation -->
+    <header class="glass-nav" id="main-nav">
+        <div class="nav-left-wrap">
+            <a href="index.html" class="logo" aria-label="Aevum Studio Home">
+                <img src="images/LOGO_pj_BG.png" alt="" class="logo-img">
+                AEVUM <span>STUDIO</span>
+                <div class="logo-pulse"></div>
+            </a>
+        </div>
+        
+        <nav id="nav-links" aria-label="Main navigation">
+            <a href="project.html" class="nav-link bh-transition">PROJECT</a>
+            <a href="brand.html" class="nav-link">BRAND</a>
+            <a href="3d_lab.html" class="nav-link">EXPERIMENT</a>
+            <a href="games.html" class="nav-link">GAMES</a>
+        </nav>
+    </header>
+
+    <!-- End of Navigation -->
+
+    <!-- Main Site Wrapper for Push Effect -->
+    <div id="site-wrapper">
+        <main>
+        <!-- ==============================
+             HERO SECTION
+        =============================== -->
+        <section class="hero" id="hero">
+            <div class="video-bg">
+                <video autoplay muted loop playsinline id="hero-video" preload="auto">
+                    <source src="videos/Finished/凱基銀行2024.mp4" type="video/mp4">
+                </video>
+                <div class="video-color-grade"></div>
+            </div>
+
+            <!-- Top aligned Banners with 3D Tilt -->
+            <div class="hero-badge-row tilt-float-fast">
+                <span class="hero-badge">
+                    <i class="badge-dot"></i>AVAILABLE FOR P.J. PROJECT
+                </span>
+                <span class="hero-badge dim">2024 — 2026</span>
+            </div>
+
+            <div class="hero-overlay tilt-float">
+                <div class="hero-title-block">
+                    <div class="hero-location-meta">
+                        <span class="loc-bracket">[</span>
+                        <span class="loc-label">LOC //</span>
+                        <span class="loc-city">TAIPEI.TW</span>
+                        <span class="loc-coords">25.0330°N</span>
+                        <span class="loc-bracket">]</span>
+                    </div>
+                    <h1 class="large-title">
+                        <span class="word-aevum">AEVUM</span> 
+                        <span class="word-studio glitch-studio" data-text="STUDIO">STUDIO</span>
+                    </h1>
+                    <div class="hero-title-underline"></div>
+                </div>
+
+                <p class="hero-subtitle">
+                    Merging <em>Abstract Reality</em> with Technical Precision<br>
+                    3D · Compositing · Photography
+                </p>
+
+                <div class="hero-btns">
+                    <button class="btn-primary" id="btn-showreel" onclick="openShowreel()">
+                        <span class="btn-icon">&#9654;</span>
+                        VIEW SHOWREEL
+                        <span class="btn-line"></span>
+                    </button>
+                    <a href="#gallery" class="btn-secondary" id="btn-works">
+                        EXPLORE WORKS
+                    </a>
+                </div>
+
+                <!-- Stats removed as per request -->
+            </div>
+
+            <div class="scroll-indicator" id="scroll-indicator">
+                <div class="scroll-bar"></div>
+            </div>
+
+            <!-- Corner decorations -->
+            <div class="hero-corner hero-corner--tl" aria-hidden="true"></div>
+            <div class="hero-corner hero-corner--tr" aria-hidden="true"></div>
+            <div class="hero-corner hero-corner--bl" aria-hidden="true"></div>
+            <div class="hero-corner hero-corner--br" aria-hidden="true"></div>
+        </section>
+
+        <!-- ==============================
+             SKILLS / ABOUT SECTION
+        =============================== -->
+        <section class="skills-section reveal-section" id="about">
+            <div class="container">
+                <div class="section-header">
+                    <span class="section-eyebrow">PROFILE</span>
+                    <h2 class="section-title">TECHNICAL <span>ARSENAL</span></h2>
+                    <p class="section-desc">
+                        High-end 3D production specialist bridging simulation, real-time, and broadcast pipelines.
+                    </p>
+                </div>
+
+                <div class="skills-grid">
+                    <!-- Row 1: Blender, Compositing, Lookdev -->
+                    <div class="skill-card reveal-item">
+                        <div class="skill-icon">
+                            <svg viewBox="0 0 40 40" fill="none">
+                                <circle cx="20" cy="20" r="14" stroke="currentColor" stroke-width="1.5"/>
+                                <circle cx="20" cy="20" r="7" stroke="currentColor" stroke-width="1"/>
+                                <circle cx="20" cy="20" r="2" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <h3 class="skill-title">BLENDER</h3>
+                        <p class="skill-desc">Hardsurface Modeling · Material · Animation · Particle Simulation · Geometry Node · Lighting · Render · Compositing · Cycle Render</p>
+                        <div class="skill-bar-wrap">
+                            <div class="skill-bar" data-level="80"></div>
+                        </div>
+                        <span class="skill-level-label">EXPERIENCED</span>
+                    </div>
+
+                    <div class="skill-card reveal-item" style="--delay:0.1s">
+                        <div class="skill-icon">
+                            <svg viewBox="0 0 40 40" fill="none">
+                                <rect x="10" y="10" width="8" height="8" stroke="currentColor" stroke-width="1.5"/>
+                                <rect x="22" y="10" width="8" height="8" stroke="currentColor" stroke-width="1.5"/>
+                                <rect x="10" y="22" width="8" height="8" stroke="currentColor" stroke-width="1.5"/>
+                                <rect x="22" y="22" width="8" height="8" stroke="currentColor" stroke-width="1.5"/>
+                            </svg>
+                        </div>
+                        <h3 class="skill-title">COMPOSITING</h3>
+                        <p class="skill-desc">Nuke · After Effects · Multi-pass Compositing · Color Grading · VFX Integration</p>
+                        <div class="skill-bar-wrap">
+                            <div class="skill-bar" data-level="75"></div>
+                        </div>
+                        <span class="skill-level-label">PROFICIENT</span>
+                    </div>
+
+                    <div class="skill-card reveal-item" style="--delay:0.2s">
+                        <div class="skill-icon">
+                            <svg viewBox="0 0 40 40" fill="none">
+                                <polyline points="8,28 16,16 22,22 28,12 36,20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h3 class="skill-title">LOOK DEV</h3>
+                        <p class="skill-desc">PBR Shading · HDRI Lighting · Lookdev for Film / Commercial · Material Authoring in Substance</p>
+                        <div class="skill-bar-wrap">
+                            <div class="skill-bar" data-level="55"></div>
+                        </div>
+                        <span class="skill-level-label">INTERMEDIATE</span>
+                    </div>
+
+                    <!-- Row 2: Houdini, AI, Photo -->
+                    <div class="skill-card reveal-item" style="--delay:0.3s">
+                        <div class="skill-icon">
+                            <svg viewBox="0 0 40 40" fill="none">
+                                <path d="M20 4L36 12V28L20 36L4 28V12L20 4Z" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M20 12L28 16V24L20 28L12 24V16L20 12Z" fill="currentColor" opacity="0.3"/>
+                            </svg>
+                        </div>
+                        <h3 class="skill-title">HOUDINI FX</h3>
+                        <p class="skill-desc">Vellum Cloth · RBD Destruction · Fluid · Modeling · MPM Solver</p>
+                        <div class="skill-bar-wrap">
+                            <div class="skill-bar" data-level="35"></div>
+                        </div>
+                        <span class="skill-level-label">FOUNDATIONAL</span>
+                    </div>
+
+                    <div class="skill-card reveal-item" style="--delay:0.4s">
+                        <div class="skill-icon">
+                            <svg viewBox="0 0 40 40" fill="none">
+                                <path d="M20 6L23 17L34 20L23 23L20 34L17 23L6 20L17 17Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <h3 class="skill-title">AI</h3>
+                        <p class="skill-desc">Midjourney · Kling · ComfyUI · AI-Assisted Generation</p>
+                        <div class="skill-bar-wrap">
+                            <div class="skill-bar" data-level="40"></div>
+                        </div>
+                        <span class="skill-level-label">FOUNDATIONAL</span>
+                    </div>
+
+                    <div class="skill-card reveal-item" style="--delay:0.5s">
+                        <div class="skill-icon">
+                            <svg viewBox="0 0 40 40" fill="none">
+                                <rect x="6" y="12" width="28" height="20" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                                <circle cx="20" cy="22" r="5" stroke="currentColor" stroke-width="1.5"/>
+                                <circle cx="30" cy="16" r="1.5" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <h3 class="skill-title">PHOTOGRAPHY</h3>
+                        <p class="skill-desc">LightRoom · Photoshop · Color Correction · Advanced Photo Retouching</p>
+                        <div class="skill-bar-wrap">
+                            <div class="skill-bar" data-level="70"></div>
+                        </div>
+                        <span class="skill-level-label">ADEPT</span>
+                    </div>
+                </div>
+
+                <!-- Wireframe Showcase Moved to blender.html -->
+            </div>
+        </section>
+
+        <!-- Real-time section removed per user request -->
+        <!-- ==============================
+             FEATURED PROJECTS GALLERY
+        =============================== -->
+        <section class="gallery-section reveal-section" id="gallery" style="margin-top: 80px;">
+            <div class="container">
+                <div class="section-header" style="margin-bottom: 60px;">
+                    <span class="section-eyebrow">PORTFOLIO</span>
+                    <h2 class="section-title">FEATURED <span>PROJECTS</span></h2>
+                    <p class="section-desc">Selected commercial productions spanning simulation, motion graphics, and real-time VFX.</p>
+                </div>
+
+                <div class="project-grid" id="project-list" data-limit="2" role="list">
+                    <!-- Injected by JS -->
+                </div>
+
+                <div class="gallery-footer reveal-item">
+                    <a href="finished.html" class="btn-primary more-projects-btn">
+                        <span class="btn-icon">&#9654;</span>
+                        VIEW MORE PROJECTS
+                        <span class="btn-line"></span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==============================
+             CLIENTS MARQUEE
+        =============================== -->
+        <section class="clients-section reveal-section" id="clients">
+            <div class="clients-header">
+                <span class="section-eyebrow">SHOWCASE</span>
+                <h2 class="section-title">COLLECT<span>IONS</span></h2>
+            </div>
+            <div class="marquee-track-wrap">
+                <div class="marquee-track" aria-hidden="true">
+                    <span>凱基銀行 2024</span><span class="dot-sep">&#9670;</span>
+                    <span>大金空調 100年</span><span class="dot-sep">&#9670;</span>
+                    <span>麥當勞歡樂送 tag-on</span><span class="dot-sep">&#9670;</span>
+                    <span>蘭諾 Lenor 衣物芳香豆</span><span class="dot-sep">&#9670;</span>
+                    <span>7-11 寶可夢 Pokémon</span><span class="dot-sep">&#9670;</span>
+                    <!-- Duplicate for seamless loop -->
+                    <span>凱基銀行 2024</span><span class="dot-sep">&#9670;</span>
+                    <span>大金空調 100年</span><span class="dot-sep">&#9670;</span>
+                    <span>麥當勞歡樂送 tag-on</span><span class="dot-sep">&#9670;</span>
+                    <span>蘭諾 Lenor 衣物芳香豆</span><span class="dot-sep">&#9670;</span>
+                    <span>7-11 寶可夢 Pokémon</span><span class="dot-sep">&#9670;</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==============================
+         FOOTER
+    =============================== -->
+    <footer class="site-footer" id="contact">
+        <div class="footer-inner">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <img src="images/PJ_LOGO.png" alt="Aevum Studio Logo" class="footer-logo-img">
+                        AEVUM <span>STUDIO</span>
+                    </div>
+                    <div class="footer-location">
+                        <span class="badge-dot"></span>
+                        TAIPEI, TAIWAN // APAC
+                    </div>
+                    <p class="footer-tagline">Available for commercial work worldwide.</p>
+                </div>
+                <div class="footer-links-col">
+                    <h4 class="footer-col-title">NAVIGATE</h4>
+                    <a href="index.html" class="footer-link">Home</a>
+                    <a href="project.html" class="footer-link">Portfolio Projects</a>
+                    <a href="brand.html" class="footer-link">Brand Story</a>
+                    <a href="3d_lab.html" class="footer-link">Experiment</a>
+                    <a href="games.html" class="footer-link">Games</a>
+                </div>
+                <div class="footer-links-col">
+                    <h4 class="footer-col-title">CONTACT</h4>
+                    <a href="mailto:eternalframePJ@gmail.com" class="footer-link">eternalframePJ@gmail.com</a>
+                    <a href="#" class="footer-link" id="footer-artstation">ArtStation</a>
+                    <a href="#" class="footer-link" id="footer-linkedin">LinkedIn</a>
+                    <a href="https://vimeo.com/user256640911" target="_blank" class="footer-link" id="footer-vimeo">Vimeo</a>
+                </div>
+                <div class="footer-cta-col">
+                    <h4 class="footer-col-title">START A PROJECT</h4>
+                    <p class="footer-cta-text">Open to freelance & studio collaboration.</p>
+                    <a href="mailto:eternalframePJ@gmail.com" class="btn-primary btn-small" id="footer-contact-btn">
+                        GET IN TOUCH
+                        <span class="btn-line"></span>
+                    </a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span class="footer-copy">&copy; 2026 AEVUM STUDIO. All rights reserved.</span>
+                <span class="footer-build">BUILD: v3.0.0 // CYBER_UI</span>
+            </div>
+        </div>
+        </footer>
+    </div> <!-- Close #site-wrapper -->
+
+    <!-- ==============================
+         VIDEO MODAL
+    =============================== -->
+    <div id="video-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-backdrop" id="modal-backdrop"></div>
+        <div class="modal-panel">
+            <button class="close-modal" id="close-modal-btn" aria-label="Close modal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+            <div class="modal-video-wrap">
+                <video controls id="modal-video" preload="metadata"></video>
+                <div class="modal-scan-overlay" aria-hidden="true"></div>
+            </div>
+            <div class="modal-info">
+                <div class="modal-info-left">
+                    <span class="modal-eyebrow">PROJECT DETAILS</span>
+                    <h3 id="modal-title">PROJECT NAME</h3>
+                    <p class="modal-role">Role: <span id="modal-role">Lead 3D Artist</span></p>
+                    <p class="modal-desc" id="modal-desc">Detailed work content and VFX breakdown.</p>
+                </div>
+                <div class="modal-tags" id="modal-tags"></div>
+            </div>
+        </div>
+    </div>
+
+    </div> <!-- End #site-wrapper -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="main.js"></script>
+    <script src="grid-distortion.js"></script>
+    <script src="3d-viewer.js"></script>
+    <script src="page-enter-vfx.js"></script>
+</body>
+</html>
