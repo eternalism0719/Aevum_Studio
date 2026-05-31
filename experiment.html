@@ -1,0 +1,126 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiments | AEVUM STUDIO</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <script src="js/page-transition-v4.js"></script>
+</head>
+<body class="cyber-theme no-cursor">
+    <!-- Ambient Texture Layers -->
+    <div class="noise-overlay"></div>
+    <div class="screen-vignette"></div>
+    <div class="spotlight"></div>
+    <canvas id="grid-canvas"></canvas>
+
+    <!-- Custom Cursor -->
+    <div class="cursor-outer" id="cursor-outer"></div>
+    <div class="cursor-inner" id="cursor-inner"></div>
+    <div class="cursor-trail" id="cursor-trail"></div>
+    <div class="cursor-text" id="cursor-text">VIEW</div>
+
+    <!-- HUD Overlay Decorations -->
+    <div class="hud-corners top-left" aria-hidden="true">ST_772 // DATA_SYNC</div>
+    <div class="hud-corners top-right" aria-hidden="true">VFX_CORE // ACTIVE</div>
+    <div class="hud-corners bottom-left" aria-hidden="true">OS_VER_3.0.0</div>
+    <div class="hud-corners bottom-right" aria-hidden="true">LATENCY: 2ms</div>
+
+    <!-- Navigation -->
+    <header class="glass-nav" id="main-nav">
+        <div class="nav-left-wrap">
+            <a href="index.html" class="logo" aria-label="Aevum Studio Home">
+                <img src="images/LOGO_pj_BG.png" alt="" class="logo-img">
+                AEVUM <span>STUDIO</span>
+                <div class="logo-pulse"></div>
+            </a>
+        </div>
+        
+        <nav id="nav-links" aria-label="Main navigation">
+            <a href="project.html" class="nav-link">PROJECT</a>
+            <a href="brand.html" class="nav-link">BRAND</a>
+            <a href="experiment.html" class="nav-link active">EXPERIMENT</a>
+            <a href="games.html" class="nav-link">GAMES</a>
+        </nav>
+    </header>
+
+    <!-- End of Navigation -->
+
+    <!-- Main Site Wrapper -->
+    <div id="site-wrapper">
+
+        <main class="page-content" style="padding-top: 140px;">
+        <section class="container">
+            <h1 class="section-title" style="text-align: center;">BLENDER <span>VFX</span></h1>
+            <div class="project-grid" id="project-list" style="margin-bottom: 80px;"></div>
+
+            <!-- Wireframe Showcase Inserted Here -->
+            <div class="wireframe-showcase reveal-item visible" style="--delay: 0.1s; margin-top: 60px;">
+                <div class="wireframe-header">
+                    <div class="wireframe-title">TOPOLOGY & WIREFRAME</div>
+                    <div class="wireframe-desc">KGI Space Cruiser // High-poly mesh extraction</div>
+                </div>
+                <div class="wireframe-container">
+                    <!-- 黑色線稿轉�??��?上極?�發?�濾??-->
+                    <video src="videos/blender_模�?/?�基_飛船_wir.webm" autoplay loop muted playsinline class="glowing-wireframe"></video>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer" id="contact">
+        <div class="footer-inner">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <img src="images/PJ_LOGO.png" alt="Aevum Studio Logo" class="footer-logo-img">
+                        AEVUM <span>STUDIO</span>
+                    </div>
+                    <div class="footer-location">
+                        <span class="badge-dot"></span>
+                        TAIPEI, TAIWAN // APAC
+                    </div>
+                    <p class="footer-tagline">Available for commercial work worldwide.</p>
+                </div>
+                <div class="footer-links-col">
+                    <h4 class="footer-col-title">NAVIGATE</h4>
+                    <a href="index.html" class="footer-link">Home</a>
+                    <a href="project.html" class="footer-link">Portfolio Projects</a>
+                    <a href="brand.html" class="footer-link">Brand Story</a>
+                    <a href="experiment.html" class="footer-link">Experiment</a>
+                    <a href="games.html" class="footer-link">Games</a>
+                </div>
+                <div class="footer-links-col">
+                    <h4 class="footer-col-title">CONTACT</h4>
+                    <a href="mailto:eternalframePJ@gmail.com" class="footer-link">eternalframePJ@gmail.com</a>
+                    <a href="#" class="footer-link" id="footer-artstation">ArtStation</a>
+                    <a href="#" class="footer-link" id="footer-linkedin">LinkedIn</a>
+                    <a href="https://vimeo.com/user256640911" target="_blank" class="footer-link" id="footer-vimeo">Vimeo</a>
+                </div>
+                <div class="footer-cta-col">
+                    <h4 class="footer-col-title">START A PROJECT</h4>
+                    <p class="footer-cta-text">Open to freelance & studio collaboration.</p>
+                    <a href="mailto:eternalframePJ@gmail.com" class="btn-primary btn-small" id="footer-contact-btn">
+                        GET IN TOUCH
+                        <span class="btn-line"></span>
+                    </a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span class="footer-copy">&copy; 2026 AEVUM STUDIO. All rights reserved.</span>
+                <span class="footer-build">BUILD: v3.0.0 // CYBER_UI</span>
+            </div>
+        </div>
+    </footer>
+    </div> <!-- Close #site-wrapper -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/grid-distortion.js"></script>
+    <script src="js/page-enter-vfx.js"></script>
+</body>
+</html>
+
