@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixiJS v8 頂級漸層折射 (Gradient Refraction Prism)</title>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #020205; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; }
+        #instructions { position: absolute; top: 20px; left: 20px; color: #ffffff; pointer-events: none; text-shadow: 0px 0px 5px rgba(0, 243, 255, 0.5); padding: 15px; border-radius: 8px; line-height: 1.5; background: rgba(0, 5, 10, 0.6); border: 1px solid rgba(0, 243, 255, 0.2); backdrop-filter: blur(4px); }
+        h3 { margin: 0 0 10px 0; font-weight: normal; letter-spacing: 2px; color: #00f3ff; }
+    </style>
+    <!-- PixiJS v8 -->
+    <script src="https://unpkg.com/pixi.js@8.x/dist/pixi.min.js"></script>
+    <!-- Pixi Filters -->
+    <script src="https://unpkg.com/pixi-filters@6.x/dist/pixi-filters.js"></script>
+</head>
+<body>
+    <div id="instructions">
+        <h3>[ 折射透鏡 / REFRACTION LENS ]</h3>
+        <p>STATUS: OPTICAL UPGRADE<br><br>
+        終極光學融合：<br>
+        - <b>動態生成漸層材質</b>：用 Canvas 繪製肥厚的柔邊折射環<br>
+        - <b>完美加法混色</b>：紅、綠、藍漸層疊加，中央為純白透鏡，邊緣自然產生稜鏡色散<br>
+        - <b>超高能彈性曲線</b>：保留 UIUX 俐落的收放速度，解決「糊糊髒髒」的問題</p>
+    </div>
+
+    <script>
+        (async () => {
+            const app = new PIXI.Application();
+            await app.init({
+                width: window.innerWidth,
+                height: window.innerHeight,
+                backgroundColor: 0x020205, 
+                resizeTo: window
+            });
+            document.body.appendChild(app.canvas);
+
+            // 1. 星空背景
+            const bgContainer = new PIXI.Container();
+            app.stage.addChild(bgContainer);
+            
+            const starsGraphics = new PIXI.Graphics();
+            for(let i=0; i<300; i++) {
+                let sx = Math.random() * window.innerWidth;
+                let sy = Math.random() * window.innerHeight;
+                let size = Math.random() * 1.5;
+                let alpha = 0.2 + Math.random() * 0.8;
+                starsGraphics.circle(sx, sy, size).fill({ color: 0xffffff, alpha: alpha });
+            }
+            bgContainer.addChild(starsGraphics);
+
+            // 空間扭曲濾鏡
+            const shockwaveOptions = {
+                center: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+                amplitude: 80, 
+                wavelength: 400, // 擴大變形範圍
+                speed: 1500,
+                brightness: 1.2,
+                radius: -1,
+                time: 0
+            };
+            const shockwaveFilter = new PIXI.filters.ShockwaveFilter(shockwaveOptions);
+            bgContainer.filters = [shockwaveFilter];
+
+            // ----------------------------------------------------
+            // 2. 製作完美的漸層折射紋理 (Gradient Texture)
+            // ----------------------------------------------------
+            function createRingTexture(radius) {
+                const padding = 10; // 加上留白，避免看到方形邊界
+                const canvas = document.createElement('canvas');
+                canvas.width = (radius + padding) * 2;
+                canvas.height = (radius + padding) * 2;
+                const ctx = canvas.getContext('2d');
+                
+                const cx = radius + padding;
+                const cy = radius + padding;
+                const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+                
+                grad.addColorStop(0, 'rgba(255, 255, 255, 0)');      // 內部完全透明
+                grad.addColorStop(0.85, 'rgba(255, 255, 255, 0.02)');// 更薄的厚度，適應後續的巨大縮放
+                grad.addColorStop(0.96, 'rgba(255, 255, 255, 1)');   // 邊緣達到最亮
+                grad.addColorStop(1, 'rgba(255, 255, 255, 0)');      // 最外圍平滑淡出，絕對透明
+                
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                return PIXI.Texture.from(canvas);
+            }
+
+            const ringTexture = createRingTexture(256); // 產生 512x512 的高畫質漸層材質
+
+            const uiContainer = new PIXI.Container();
+            app.stage.addChild(uiContainer);
+
+            // 利用同一個漸層材質，產生紅、綠、藍三個精靈圖 (Sprite)
+            const spriteRed = new PIXI.Sprite(ringTexture);
+            const spriteGreen = new PIXI.Sprite(ringTexture);
+            const spriteBlue = new PIXI.Sprite(ringTexture);
+
+            // 設定原點在正中心
+            spriteRed.anchor.set(0.5);
+            spriteGreen.anchor.set(0.5);
+            spriteBlue.anchor.set(0.5);
+
+            // 賦予 RGB 顏色並設定加法混色
+            spriteRed.tint = 0xff0000;
+            spriteGreen.tint = 0x00ff00;
+            spriteBlue.tint = 0x0000ff;
+
+            spriteRed.blendMode = 'add';
+            spriteGreen.blendMode = 'add';
+            spriteBlue.blendMode = 'add';
+
+            // 隱藏它們直到點擊
+            spriteRed.alpha = 0;
+            spriteGreen.alpha = 0;
+            spriteBlue.alpha = 0;
+
+            uiContainer.addChild(spriteRed);
+            uiContainer.addChild(spriteGreen);
+            uiContainer.addChild(spriteBlue);
+
+            // 核心閃光
+            const coreFlash = new PIXI.Graphics();
+            coreFlash.blendMode = 'add';
+            const flashBlur = new PIXI.BlurFilter({ strength: 20 });
+            coreFlash.filters = [flashBlur];
+            uiContainer.addChild(coreFlash);
+
+            const sparkContainer = new PIXI.Container();
+            uiContainer.addChild(sparkContainer);
+            let activeSparks = [];
+
+            // ----------------------------------------------------
+            // 動畫邏輯
+            // ----------------------------------------------------
+            let isAnimating = false;
+            let expTime = 0;
+            let expX = 0;
+            let expY = 0;
+
+            function easeOutExpo(x) {
+                return x === 1 ? 1 : 1 - Math.pow(2, -10 * x);
+            }
+
+            function triggerExplosion(x, y) {
+                expX = x;
+                expY = y;
+                expTime = 0;
+                
+                shockwaveFilter.center.x = x;
+                shockwaveFilter.center.y = y;
+                shockwaveFilter.time = 0;
+
+                // 設定 Sprite 位置
+                spriteRed.position.set(x, y);
+                spriteGreen.position.set(x, y);
+                spriteBlue.position.set(x, y);
+
+                sparkContainer.removeChildren();
+                activeSparks = [];
+
+                // 光束火花
+                for(let i = 0; i < 40; i++) {
+                    const spark = new PIXI.Graphics();
+                    spark.blendMode = 'add';
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const velocity = 1000 + Math.random() * 2500;
+                    const length = 20 + Math.random() * 80;
+                    const thickness = 1 + Math.random() * 2;
+                    
+                    const colors = [0xffffff, 0x00f3ff, 0xffaa00];
+                    const color = colors[Math.floor(Math.random() * colors.length)];
+                    
+                    spark.rect(0, -thickness/2, length, thickness).fill(color);
+                    
+                    let startOffset = 50 + Math.random() * 100;
+                    spark.position.set(x + Math.cos(angle)*startOffset, y + Math.sin(angle)*startOffset);
+                    spark.rotation = angle;
+                    
+                    sparkContainer.addChild(spark);
+                    activeSparks.push({
+                        sprite: spark,
+                        vx: Math.cos(angle) * velocity,
+                        vy: Math.sin(angle) * velocity,
+                        life: 1.0, 
+                        decayRate: 2.0 + Math.random() * 3.0 
+                    });
+                }
+                
+                isAnimating = true;
+            }
+
+            app.ticker.add((ticker) => {
+                if (!isAnimating) return;
+                
+                const dt = ticker.deltaMS / 1000;
+                expTime += dt;
+                
+                const maxTime = 1.2;
+                let progress = expTime / maxTime;
+                if (progress > 1) progress = 1;
+                
+                let easeOut = easeOutExpo(progress);
+
+                // 1. 空間扭曲
+                shockwaveFilter.time += dt;
+                shockwaveFilter.amplitude = 80 * (1 - progress); 
+
+                // 2. 核心極速閃光
+                coreFlash.clear();
+                let flashProgress = expTime / 0.15;
+                if (flashProgress <= 1) {
+                    let flashEase = 1 - Math.pow(flashProgress, 2);
+                    coreFlash.alpha = flashEase;
+                    coreFlash.circle(expX, expY, 200 * (1 - flashEase)).fill(0xffffff);
+                }
+
+                // ✨ 3. 漸層折射環 (Gradient Refraction Rings)
+                // 我們直接放大已經擁有漸層的 Sprite，取代即時繪製線條
+                const baseScale = easeOut * 12; // 放大到 12 倍，確保畫面邊緣點擊時也能覆蓋全螢幕
+                const masterAlpha = 0.5 * (1 - Math.pow(progress, 1.5)); // 降低透明度，更具通透感
+                
+                // 設定錯開的縮放比例，創造邊緣色散！
+                // 因為圖片自帶完美的漸層邊緣，所以縮放錯開時，邊緣會非常柔順的高級！
+                spriteRed.scale.set(baseScale * 1.05);
+                spriteGreen.scale.set(baseScale * 1.00);
+                spriteBlue.scale.set(baseScale * 0.95);
+
+                spriteRed.alpha = masterAlpha;
+                spriteGreen.alpha = masterAlpha;
+                spriteBlue.alpha = masterAlpha;
+
+                // 4. 星屑射線
+                for(let i = activeSparks.length - 1; i >= 0; i--) {
+                    let s = activeSparks[i];
+                    s.life -= dt * s.decayRate;
+                    
+                    if (s.life <= 0) {
+                        sparkContainer.removeChild(s.sprite);
+                        activeSparks.splice(i, 1);
+                        continue;
+                    }
+                    
+                    s.vx *= 0.85;
+                    s.vy *= 0.85;
+                    
+                    s.sprite.x += s.vx * dt;
+                    s.sprite.y += s.vy * dt;
+                    s.sprite.alpha = Math.pow(s.life, 2);
+                    s.sprite.scale.x = s.life; 
+                }
+
+                if (progress >= 1) {
+                    isAnimating = false;
+                    shockwaveFilter.amplitude = 0;
+                    spriteRed.alpha = 0;
+                    spriteGreen.alpha = 0;
+                    spriteBlue.alpha = 0;
+                }
+            });
+
+            // 綁定點擊事件
+            app.canvas.addEventListener('pointerdown', (e) => {
+                triggerExplosion(e.clientX, e.clientY);
+            });
+
+            // 首次展示
+            setTimeout(() => triggerExplosion(window.innerWidth / 2, window.innerHeight / 2), 500);
+        })();
+    </script>
+</body>
+</html>

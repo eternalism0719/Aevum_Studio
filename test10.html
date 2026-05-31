@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixiJS v8 UIUX 高科技電磁脈衝 (EMP Shockwave)</title>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #030303; font-family: 'Courier New', Courier, monospace; }
+        canvas { display: block; }
+        #instructions { position: absolute; top: 20px; left: 20px; color: #aaffff; pointer-events: none; text-shadow: 0px 0px 5px rgba(0, 243, 255, 0.5); padding: 15px; border-radius: 8px; line-height: 1.5; border: 1px solid rgba(0, 243, 255, 0.2); background: rgba(0, 10, 20, 0.4); backdrop-filter: blur(4px); }
+        h3 { margin: 0 0 10px 0; color: #00f3ff; font-weight: normal; letter-spacing: 2px; }
+    </style>
+    <!-- PixiJS v8 -->
+    <script src="https://unpkg.com/pixi.js@8.x/dist/pixi.min.js"></script>
+    <!-- Pixi Filters (v6 for v8 compatibility) -->
+    <script src="https://unpkg.com/pixi-filters@6.x/dist/pixi-filters.js"></script>
+</head>
+<body>
+    <div id="instructions">
+        <h3>[ SYS.EMP_GENERATOR ]</h3>
+        <p>STATUS: ONLINE<br>ACTION: CLICK TO DEPLOY PULSE<br><br>
+        UIUXPRO 美學重點：<br>
+        - 極簡幾何 (精準細線與準星)<br>
+        - 科技冷色調 (純黑底/純白/螢光青)<br>
+        - Snappy 動態曲線 (Expo Ease Out)<br>
+        - 乾淨的空間扭曲 (如玻璃透鏡)</p>
+    </div>
+
+    <script>
+        (async () => {
+            const app = new PIXI.Application();
+            await app.init({
+                width: window.innerWidth,
+                height: window.innerHeight,
+                backgroundColor: 0x030303, // 極致黑底
+                resizeTo: window
+            });
+            document.body.appendChild(app.canvas);
+
+            // 1. 背景容器 (放置科技網格與文字，用來被扭曲)
+            const bgContainer = new PIXI.Container();
+            app.stage.addChild(bgContainer);
+            
+            // 繪製科技感細線網格
+            const bg = new PIXI.Graphics();
+            for(let i = 0; i <= window.innerWidth; i += 40) { bg.moveTo(i, 0).lineTo(i, window.innerHeight); }
+            for(let j = 0; j <= window.innerHeight; j += 40) { bg.moveTo(0, j).lineTo(window.innerWidth, j); }
+            bg.stroke({ width: 1, color: 0x11111a }); // 非常暗的網格線
+            bgContainer.addChild(bg);
+
+            // 加入一些假 UI 數據點讓扭曲看起來更有感
+            const textStyle = new PIXI.TextStyle({ fontFamily: 'Courier New', fontSize: 10, fill: 0x444455, letterSpacing: 1 });
+            for(let i=0; i<15; i++) {
+                const txt = new PIXI.Text({ text: `NODE_${Math.floor(Math.random()*1000)}\n[OK]`, style: textStyle });
+                txt.x = 50 + Math.random() * (window.innerWidth - 100);
+                txt.y = 50 + Math.random() * (window.innerHeight - 100);
+                bgContainer.addChild(txt);
+            }
+
+            // 空間扭曲濾鏡：這次調得更像玻璃透鏡 (Wavelength 變大，振幅較小)
+            const shockwaveOptions = {
+                center: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
+                amplitude: 40,    // 乾淨精準的扭曲
+                wavelength: 250,  // 厚實的玻璃邊緣感
+                speed: 1500,
+                brightness: 1.2,
+                radius: -1,
+                time: 0
+            };
+            const shockwaveFilter = new PIXI.filters.ShockwaveFilter(shockwaveOptions);
+            bgContainer.filters = [shockwaveFilter];
+
+            // ----------------------------------------------------
+            // 2. 幾何 UI 動態圖層 (UIUX Graphics)
+            // ----------------------------------------------------
+            const uiContainer = new PIXI.Container();
+            app.stage.addChild(uiContainer);
+
+            // 準星 (Crosshair)
+            const crosshair = new PIXI.Graphics();
+            crosshair.blendMode = 'add';
+            uiContainer.addChild(crosshair);
+
+            // 三層精準幾何擴張環
+            const ring1 = new PIXI.Graphics(); // 核心主環
+            const ring2 = new PIXI.Graphics(); // 外圍細線 1
+            const ring3 = new PIXI.Graphics(); // 外圍細線 2
+            ring1.blendMode = 'add';
+            ring2.blendMode = 'add';
+            ring3.blendMode = 'add';
+            
+            // 只有主環稍微有一點點發光，保持整體線條俐落
+            const blurOptions = new PIXI.BlurFilter();
+            blurOptions.strength = 4;
+            ring1.filters = [blurOptions];
+            
+            uiContainer.addChild(ring3);
+            uiContainer.addChild(ring2);
+            uiContainer.addChild(ring1);
+
+            // ----------------------------------------------------
+            // 動畫邏輯
+            // ----------------------------------------------------
+            let isAnimating = false;
+            let expTime = 0;
+            let expX = 0;
+            let expY = 0;
+
+            function triggerPulse(x, y) {
+                expX = x;
+                expY = y;
+                expTime = 0;
+                
+                shockwaveFilter.center.x = x;
+                shockwaveFilter.center.y = y;
+                shockwaveFilter.time = 0;
+                
+                isAnimating = true;
+            }
+
+            // 【UIUX 核心秘訣】：Expo Ease Out 曲線
+            // 創造出極具「彈性與爆發力」，起頭極快但收尾無比滑順的動態
+            function easeOutExpo(x) {
+                return x === 1 ? 1 : 1 - Math.pow(2, -10 * x);
+            }
+
+            app.ticker.add((ticker) => {
+                if (!isAnimating) return;
+                
+                const dt = ticker.deltaMS / 1000;
+                expTime += dt;
+                
+                const maxTime = 1.2;
+                let progress = expTime / maxTime;
+                if (progress > 1) progress = 1;
+                
+                // 套用 Snappy 曲線
+                let easeOut = easeOutExpo(progress);
+
+                // 1. 更新扭曲波紋
+                shockwaveFilter.time += dt;
+                // 線性衰減，讓玻璃折射感穩定消失
+                shockwaveFilter.amplitude = 40 * (1 - progress); 
+
+                // 2. HUD 互動準星 (Crosshair)
+                crosshair.clear();
+                let chProgress = expTime / 0.5; // 準星動態只需要 0.5 秒
+                if (chProgress <= 1) {
+                    let chEase = easeOutExpo(chProgress);
+                    let size = 20 + (40 * chEase); // 準星放大的幅度
+                    let alpha = 1 - Math.pow(chProgress, 2);
+                    
+                    crosshair.alpha = alpha;
+                    
+                    // 畫在本地座標 (0, 0)
+                    crosshair.moveTo(-size, 0).lineTo(size, 0);
+                    crosshair.moveTo(0, -size).lineTo(0, size);
+                    crosshair.circle(0, 0, size * 0.4);
+                    crosshair.circle(0, 0, size * 0.9);
+                    
+                    // 極細的科技藍準星
+                    crosshair.stroke({ width: 1.5, color: 0x00f3ff, alignment: 0.5 });
+                    
+                    // 設定絕對位置，並隨時間旋轉 90 度 (Math.PI / 2)
+                    crosshair.position.set(expX, expY);
+                    crosshair.rotation = chEase * (Math.PI / 2);
+                }
+
+                // 3. 更新三層幾何環
+                ring1.clear();
+                ring2.clear();
+                ring3.clear();
+                
+                // 基礎半徑，隨 easeOut 曲線極速放大後漸緩
+                const baseRadius = 800 * easeOut;
+                
+                // 核心主環：白光，稍微有厚度
+                ring1.alpha = 1 - progress;
+                ring1.circle(expX, expY, baseRadius).stroke({ width: 8 * (1 - progress), color: 0xffffff });
+                
+                // 追隨環 1：稍微大一點，科技青色，極細
+                if (baseRadius > 10) {
+                    ring2.alpha = (1 - Math.pow(progress, 1.5)) * 0.8;
+                    ring2.circle(expX, expY, baseRadius * 1.05).stroke({ width: 2, color: 0x00f3ff });
+                }
+                
+                // 追隨環 2：最大圈，純白，最細的擴張線
+                if (baseRadius > 20) {
+                    ring3.alpha = (1 - Math.pow(progress, 0.8)) * 0.4;
+                    ring3.circle(expX, expY, baseRadius * 1.15).stroke({ width: 1, color: 0xffffff });
+                }
+
+                if (progress >= 1) {
+                    isAnimating = false;
+                    shockwaveFilter.amplitude = 0;
+                    crosshair.clear();
+                }
+            });
+
+            // 綁定點擊事件
+            app.canvas.addEventListener('pointerdown', (e) => {
+                triggerPulse(e.clientX, e.clientY);
+            });
+
+            setTimeout(() => triggerPulse(window.innerWidth / 2, window.innerHeight / 2), 500);
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,346 @@
+<html lang="zh-TW"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>黑洞事件視界 | 粒子測試</title>
+    <style>
+        :root {
+            --bg-color: #040404;
+            --grid-color: rgba(255, 255, 255, 0.05);
+            --accent-color: #ff4500;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            font-family: 'Inter', -apple-system, sans-serif;
+            color: #fff;
+        }
+
+        /* 格線背景層 */
+        .grid-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .grid-precision {
+            background-image: 
+                linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .grid-space {
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.08) 1.5px, transparent 1.5px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1.5px, transparent 1.5px);
+            background-size: 100px 100px;
+        }
+
+        /* Canvas 層 */
+        #blackhole-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* UI 切換按鈕 */
+        .ui-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .label {
+            font-size: 12px;
+            opacity: 0.5;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 13px;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-align: left;
+        }
+
+        button:hover {
+            background: rgba(255, 69, 0, 0.2);
+            border-color: var(--accent-color);
+        }
+
+        button.active {
+            background: var(--accent-color);
+            border-color: #fff;
+            box-shadow: 0 0 15px var(--accent-color);
+        }
+
+        .hint {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="grid" class="grid-container grid-precision"></div>
+
+    <div class="hint">Black Hole Vortex Render 6.0</div>
+
+    <div class="ui-controls">
+        <div class="label">Grid Density</div>
+        <div class="btn-group">
+            <button id="btn-prec" class="active" onclick="setGrid('precision')">Precision</button>
+            <button id="btn-space" onclick="setGrid('space')">Space</button>
+        </div>
+        
+        <div style="height: 10px;"></div>
+        
+        <div class="label">Vortex Style</div>
+        <div class="btn-group" style="flex-direction: column;">
+            <button id="style-fine" onclick="setStyle('fine')">Fine Sand (細密流沙)</button>
+            <button id="style-fibrous" onclick="setStyle('fibrous')">Power Lines (能量光纖)</button>
+            <button id="style-chaos" class="active" onclick="setStyle('chaos')">Chaos Vortex (混亂漩渦)</button>
+        </div>
+    </div>
+
+    <canvas id="blackhole-canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('blackhole-canvas');
+        const ctx = canvas.getContext('2d');
+        const grid = document.getElementById('grid');
+
+        // 配置參數
+        let config = {
+            particleCount: 500,
+            innerRadius: 15,
+            outerRadius: 60,
+            speedScale: 0.05,
+            trailLength: 0.1, // 0-1
+            power: 1, // 線條粗細感
+            noiseIntensity: 5,
+            glowIntensity: 10
+        };
+
+        const styles = {
+            fine: {
+                particleCount: 800,
+                innerRadius: 12,
+                outerRadius: 45,
+                speedScale: 0.08,
+                trailLength: 0.05,
+                power: 0.5,
+                noiseIntensity: 3,
+                glowIntensity: 8
+            },
+            fibrous: {
+                particleCount: 120,
+                innerRadius: 15,
+                outerRadius: 75,
+                speedScale: 0.04,
+                trailLength: 0.2,
+                power: 1.5,
+                noiseIntensity: 12,
+                glowIntensity: 20
+            },
+            chaos: {
+                particleCount: 400,
+                innerRadius: 5,
+                outerRadius: 100,
+                speedScale: 0.12,
+                trailLength: 0.1,
+                power: 0.8,
+                noiseIntensity: 25,
+                glowIntensity: 15
+            }
+        };
+
+        // 鼠標座標與物理
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        let currentX = mouseX;
+        let currentY = mouseY;
+        let velX = 0, velY = 0;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        resize();
+
+        // 簡易的 LCG 虛擬隨機數
+        let seed = 12345;
+        function random() {
+            seed = (seed * 1664525 + 1013904223) % 4294967296;
+            return seed / 4294967296;
+        }
+
+        // 粒子系統
+        class Particle {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                this.angle = random() * Math.PI * 2;
+                this.orbitRadius = config.innerRadius + random() * (config.outerRadius - config.innerRadius);
+                this.speed = (0.5 + random() * 0.5) * config.speedScale;
+                this.z = random() * 100;
+                this.colorOffset = random() * 20;
+                
+                this.resetPos();
+            }
+
+            resetPos() {
+                const x = Math.cos(this.angle) * this.orbitRadius;
+                const y = Math.sin(this.angle) * this.orbitRadius;
+                this.lx = this.x = x;
+                this.ly = this.y = y;
+            }
+
+            update(time, vx, vy) {
+                this.lx = this.x;
+                this.ly = this.y;
+
+                this.angle += this.speed;
+
+                const n1 = Math.sin(this.angle * 2 + time * 0.002) * config.noiseIntensity;
+                const r = this.orbitRadius + n1;
+                
+                let tx = Math.cos(this.angle) * r;
+                let ty = Math.sin(this.angle) * r;
+                
+                const lag = 0.8;
+                tx -= vx * lag;
+                ty -= vy * lag;
+
+                this.x = tx;
+                this.y = ty;
+            }
+
+            draw(ctx, centerX, centerY) {
+                ctx.beginPath();
+                ctx.moveTo(centerX + this.lx, centerY + this.ly);
+                ctx.lineTo(centerX + this.x, centerY + this.y);
+                
+                const brightness = (0.3 + Math.sin(this.angle) * 0.5 + 0.5); 
+                
+                ctx.strokeStyle = `hsla(${20 + this.colorOffset}, 100%, ${50 * brightness}%, ${0.6})`;
+                ctx.lineWidth = config.power * brightness;
+                ctx.stroke();
+            }
+        }
+
+        let particles = [];
+        function createParticles() {
+            particles = [];
+            for (let i = 0; i < config.particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        createParticles();
+
+        function setGrid(type) {
+            grid.className = `grid-container grid-${type}`;
+            document.getElementById('btn-prec').classList.toggle('active', type === 'precision');
+            document.getElementById('btn-space').classList.toggle('active', type === 'space');
+        }
+
+        function setStyle(style) {
+            config = { ...styles[style] };
+            createParticles();
+            document.querySelectorAll('.btn-group button[id^="style-"]').forEach(b => b.classList.remove('active'));
+            document.getElementById(`style-${style}`).classList.add('active');
+        }
+
+        function render(time) {
+            ctx.fillStyle = `rgba(4, 4, 4, ${Math.max(0.05, 1 - config.trailLength * 5)})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const friction = 0.15;
+            velX = (mouseX - currentX) * friction;
+            velY = (mouseY - currentY) * friction;
+            currentX += velX;
+            currentY += velY;
+
+            ctx.save();
+            ctx.translate(currentX, currentY);
+            
+            const speed = Math.sqrt(velX * velX + velY * velY);
+            const stretch = Math.min(speed * 0.04, 0.5);
+            const angle = Math.atan2(velY, velX);
+            ctx.rotate(angle);
+            ctx.scale(1 + stretch, 1 - stretch * 0.5);
+            ctx.rotate(-angle);
+
+            ctx.beginPath();
+            ctx.arc(0, 0, config.innerRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#000';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 69, 0, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.globalCompositeOperation = 'lighter';
+            particles.forEach(p => {
+                p.update(time, velX, velY);
+                p.draw(ctx, currentX, currentY);
+            });
+            ctx.globalCompositeOperation = 'source-over';
+
+            requestAnimationFrame(render);
+        }
+
+        render(0);
+        setStyle('fine');
+    </script>
+</body></html>

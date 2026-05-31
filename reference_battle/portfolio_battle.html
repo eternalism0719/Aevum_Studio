@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Grand Tournament | Premium Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030305;
+            --card-glass: rgba(255, 255, 255, 0.03);
+            --accent: #00f2ff;
+            --accent-glow: rgba(0, 242, 255, 0.4);
+            --accent-gradient: linear-gradient(135deg, #00f2ff 0%, #006ae5 100%);
+            --text-main: #ffffff;
+            --text-dim: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --transit-speed: 0.6s;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 106, 229, 0.1) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(0, 242, 255, 0.05) 0%, transparent 40%),
+                var(--bg);
+            padding: 20px;
+        }
+
+        /* Animated Background Particles Replacement */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        header { margin-bottom: 50px; text-align: center; z-index: 10; transform: translateY(0); transition: 0.8s cubic-bezier(0.16, 1, 0.3, 1); }
+        h1 { 
+            font-family: 'Space Grotesk', sans-serif; 
+            font-size: clamp(2rem, 5vw, 3.5rem); 
+            font-weight: 700;
+            background: var(--accent-gradient); 
+            -webkit-background-clip: text; 
+            background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            letter-spacing: -1px;
+            text-transform: uppercase;
+        }
+        .round-info { 
+            background: rgba(0, 242, 255, 0.08); 
+            color: var(--accent); 
+            padding: 8px 30px; 
+            border-radius: 40px; 
+            font-size: 0.9rem; 
+            font-weight: 700; 
+            letter-spacing: 2px;
+            text-transform: uppercase; 
+            margin-top: 20px; 
+            display: inline-block;
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.05);
+        }
+
+        .container { 
+            width: 100%; 
+            max-width: 1280px; 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 40px; 
+            position: relative; 
+            perspective: 1000px;
+        }
+
+        .vs-badge { 
+            position: absolute; 
+            left: 50%; 
+            top: 50%; 
+            transform: translate(-50%, -50%); 
+            background: var(--bg);
+            width: 70px; height: 70px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: 900; 
+            font-family: 'Space Grotesk', sans-serif; 
+            font-size: 1.2rem; 
+            border: 2px solid var(--accent); 
+            z-index: 20; 
+            box-shadow: 0 0 30px var(--accent-glow);
+            color: var(--accent);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .vs-badge::after {
+            content: "";
+            position: absolute;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            border: 1px solid var(--accent);
+            animation: pulseVs 2s infinite;
+        }
+        @keyframes pulseVs {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.8); opacity: 0; }
+        }
+
+        .card-wrapper {
+            transition: transform var(--transit-speed) cubic-bezier(0.16, 1, 0.3, 1), opacity var(--transit-speed);
+        }
+
+        .card { 
+            background: var(--card-glass); 
+            border: 1px solid var(--glass-border); 
+            border-radius: 30px; 
+            padding: 20px; 
+            cursor: pointer; 
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); 
+            position: relative; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .card:hover { 
+            transform: translateY(-15px) scale(1.02); 
+            border-color: var(--accent); 
+            background: rgba(255, 255, 255, 0.05);
+            box-shadow: 0 30px 60px rgba(0, 242, 255, 0.1);
+        }
+
+        .img-container { 
+            width: 100%; 
+            aspect-ratio: 16/10; 
+            border-radius: 20px; 
+            overflow: hidden; 
+            background: #000;
+            position: relative;
+        }
+        .img-container img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1); 
+        }
+        .card:hover .img-container img { transform: scale(1.1); }
+
+        .highlights { 
+            color: var(--accent); 
+            font-size: 0.8rem; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+        }
+        .artist-name { 
+            font-size: 1.8rem; 
+            font-weight: 700; 
+            font-family: 'Space Grotesk', sans-serif;
+            line-height: 1.1;
+        }
+        .description { 
+            color: var(--text-dim); 
+            font-size: 1rem; 
+            line-height: 1.6;
+            font-weight: 300;
+        }
+
+        /* MATCH TRANSITIONS */
+        .slide-out-left { transform: translateX(-100px); opacity: 0; pointer-events: none; }
+        .slide-out-right { transform: translateX(100px); opacity: 0; pointer-events: none; }
+        .slide-in { transform: translateX(0); opacity: 1; }
+
+        .status-overlay { 
+            position: fixed; 
+            bottom: 40px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            display: flex; 
+            flex-direction: column;
+            gap: 15px; 
+            align-items: center; 
+            padding: 20px 40px; 
+            border-radius: 50px; 
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border); 
+            backdrop-filter: blur(20px); 
+            z-index: 100;
+            min-width: 400px;
+        }
+        
+        .progress-bar-bg {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--accent-gradient);
+            width: 0%;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .status-items {
+            display: flex;
+            gap: 40px;
+            width: 100%;
+            justify-content: center;
+        }
+        .status-item { font-size: 0.85rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+        .status-item span { color: var(--text-main); font-weight: 700; margin-left: 8px; font-variant-numeric: tabular-nums; }
+
+        .bye-notice { 
+            position: fixed; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.9); 
+            display: none; 
+            align-items: center; 
+            justify-content: center; 
+            z-index: 200; 
+            backdrop-filter: blur(20px); 
+        }
+        .bye-content { 
+            background: var(--bg); 
+            border: 1px solid var(--accent); 
+            padding: 50px; 
+            border-radius: 40px; 
+            text-align: center; 
+            max-width: 500px; 
+            box-shadow: 0 0 100px rgba(0, 242, 255, 0.2);
+            animation: modalIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes modalIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .bye-content h2 { margin-bottom: 20px; color: var(--accent); font-family: 'Space Grotesk'; font-size: 2rem; }
+        .bye-content button { 
+            background: var(--accent-gradient); 
+            border: none; 
+            padding: 15px 40px; 
+            border-radius: 40px; 
+            color: white; 
+            cursor: pointer; 
+            margin-top: 30px; 
+            font-weight: 700; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 10px 30px rgba(0, 242, 255, 0.3);
+            transition: 0.3s;
+        }
+        .bye-content button:hover { transform: scale(1.05); box-shadow: 0 15px 40px rgba(0, 242, 255, 0.4); }
+
+        .winner-screen { 
+            display: none; 
+            text-align: center; 
+            animation: winnerReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1); 
+            z-index: 50;
+        }
+        @keyframes winnerReveal { 
+            from { opacity: 0; transform: scale(0.5); filter: blur(20px); } 
+            to { opacity: 1; transform: scale(1); filter: blur(0); } 
+        }
+        .winner-card { 
+            max-width: 700px; 
+            margin: 40px auto; 
+            border: 3px solid var(--accent); 
+            box-shadow: 0 0 80px rgba(0, 242, 255, 0.3); 
+            background: rgba(255,255,255,0.05);
+        }
+        .winner-title {
+            font-family: 'Space Grotesk';
+            font-size: 4rem;
+            font-weight: 900;
+            margin-bottom: 10px;
+            color: #fff;
+            text-shadow: 0 0 40px var(--accent-glow);
+        }
+
+        .action-button {
+            background: transparent; 
+            border: 1px solid var(--glass-border); 
+            color: var(--text-dim); 
+            padding: 15px 40px; 
+            border-radius: 40px; 
+            cursor: pointer;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: 0.3s;
+            margin-top: 20px;
+        }
+        .action-button:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(0, 242, 255, 0.05);
+        }
+
+        @media (max-width: 900px) { 
+            .container { grid-template-columns: 1fr; gap: 60px; } 
+            .vs-badge { top: 50%; left: 50%; transform: translate(-50%, -50%); } 
+            .status-overlay { width: 90%; min-width: auto; bottom: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<header id="main-header">
+    <h1>Portfolio Showdown</h1>
+    <div class="round-info" id="round-title">Tournament Start</div>
+</header>
+
+<div class="container" id="battle-container">
+    <div class="vs-badge">VS</div>
+    
+    <div class="card-wrapper" id="left-wrapper">
+        <div class="card" id="left-card" onclick="processChoice(0)">
+            <div class="img-container">
+                <img id="left-img" src="">
+            </div>
+            <div class="info">
+                <div class="highlights" id="left-high"></div>
+                <div class="artist-name" id="left-name"></div>
+                <div class="description" id="left-desc"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-wrapper" id="right-wrapper">
+        <div class="card" id="right-card" onclick="processChoice(1)">
+            <div class="img-container">
+                <img id="right-img" src="">
+            </div>
+            <div class="info">
+                <div class="highlights" id="right-high"></div>
+                <div class="artist-name" id="right-name"></div>
+                <div class="description" id="right-desc"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="status-overlay" id="status-bar">
+    <div class="status-items">
+        <div class="status-item">Survivors: <span id="pool-size">50</span></div>
+        <div class="status-item">Match: <span id="progress-val">0 / 25</span></div>
+    </div>
+    <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progress-bar"></div>
+    </div>
+</div>
+
+<div class="bye-notice" id="bye-notice">
+    <div class="bye-content">
+        <div class="highlights">Lucky Advancement</div>
+        <h2 id="bye-name">Artist Name</h2>
+        <p class="description">This participant was granted a 'Bye' due to odd number of contestants and advances to the next round automatically.</p>
+        <button onclick="hideBye()">Continue Tournament</button>
+    </div>
+</div>
+
+<div class="winner-screen" id="winner-screen">
+    <div class="winner-title">GRAND CHAMPION</div>
+    <div class="card winner-card" id="final-card">
+        <div class="img-container" style="aspect-ratio: 16/9;">
+            <img id="final-img" src="">
+        </div>
+        <div class="info" style="padding: 40px; text-align: left;">
+            <div class="highlights" id="final-high"></div>
+            <div class="artist-name" id="final-name" style="font-size: 3.5rem; margin-bottom: 20px;"></div>
+            <div class="description" id="final-desc" style="font-size: 1.4rem;"></div>
+        </div>
+    </div>
+    <button class="action-button" onclick="location.reload()">Start New Tournament</button>
+</div>
+
+<script>
+    const artistsPoolFull = [
+        { name: "Roman De Giuli", high: "LIQUID LANDSCAPE", desc: "Stunning macro cinematography.", path: "images/romandegiuli_portfolio_fix_1773510260537.png" },
+        { name: "Peter Tarka", high: "3D STYLIST", desc: "Clean grid, large typography.", path: "images/01_peter_tarka_1773425087228.png" },
+        { name: "Alche Studio", high: "MINIMALIST", desc: "Nike and Apple style, luxury feel.", path: "images/02_alche_studio_1773427198677.png" },
+        { name: "Denys Chupryna", high: "BOLD DESIGN", desc: "High contrast, big fonts.", path: "images/03_den_cool_1773427198940.png" },
+        { name: "Chus Margallo", high: "INTERACTIVE 3D", desc: "Playful interactive elements.", path: "images/04_chus_margallo_1773427200976.png" },
+        { name: "Ash Thorp", high: "CINEMATIC", desc: "Dark HUD elements, cyberpunk vibe.", path: "images/05_ash_thorp_1773427221922.png" },
+        { name: "GMUNK", high: "HIGH-TECH", desc: "Experimental, neon visuals.", path: "images/06_gmunk_1773427222488.png" },
+        { name: "Maxim Zhestkov", high: "ARCHITECTURAL", desc: "Monochrome, physics simulations.", path: "images/07_maxim_zhestkov_1773427223057.png" },
+        { name: "David Ariew", high: "VIBRANT ART", desc: "Complex lighting, rich textures.", path: "images/08_david_ariew_1773427225217.png" },
+        { name: "Hashmukh Kerai", high: "ELEGANT MOTION", desc: "Clean layout, video-focused.", path: "images/09_hashmukh_kerai_1773427405563.png" },
+        { name: "Edgar Davey", high: "COLORFUL 3D", desc: "Smooth animations, playful physics.", path: "images/10_edgar_davey_1773427406112.png" },
+        { name: "Jordan Bergren", high: "IMPACTFUL", desc: "Nike style motion design.", path: "images/jordanbergren_portfolio_fix_1773510163537.png" },
+        { name: "Ariel Costa", high: "ARTISTIC", desc: "Quirky, collage-style storytelling.", path: "images/12_ariel_costa_1773427408612.png" },
+        { name: "Thibaut Crépelle", high: "SMOOTH TRANSITIONS", desc: "Project focus, elegant web flow.", path: "images/thibautcrepelle_portfolio_fix_1773510695115.png" },
+        { name: "Marco Mori", high: "SURREALISM", desc: "Looping video grid, 3D simulations.", path: "images/marcomori_portfolio_fix_1773510374595.png" },
+        { name: "Six N Five", high: "POETIC LIGHTING", desc: "Architectural 3D, soft colors.", path: "images/15_six_n_five_1773427482179.png" },
+        { name: "Vitaly Bulgarov", high: "MECHANICAL", desc: "Highly detailed concept art.", path: "images/16_vitaly_bulgarov_1773427484345.png" },
+        { name: "Beeple", high: "DIGITAL ICON", desc: "Minimalist grid focus.", path: "images/17_beeple_1773427563990.png" },
+        { name: "Raoul Marks", high: "MAIN TITLE HERO", desc: "Cinematic reels, dark design.", path: "images/18_raoul_marks_1773427564435.png" },
+        { name: "Patrick Clair", high: "TITLE SEQUENCES", desc: "High-end conceptual visuals.", path: "images/19_patrick_clair_antibody_1773427566080.png" },
+        { name: "Ben Marriott", high: "EDUCATIONAL", desc: "Personality-driven motion design.", path: "images/20_ben_marriott_1773427668294.png" },
+        { name: "Simon Holmedal", high: "PROCEDURAL 3D", desc: "Houdini specialist excellence.", path: "images/21_simon_holmedal_1773427668832.png" },
+        { name: "Ordinary Folk", high: "STORY-DRIVEN", desc: "Smooth vector and 3D animation.", path: "images/22_ordinary_folk_1773427669106.png" },
+        { name: "Buck", high: "CREATIVE GIANT", desc: "Diverse styles, highest standards.", path: "images/23_buck_1773427671111.png" },
+        { name: "SlimJim Studios", high: "LOOP MASTER", desc: "Playful character motion loops.", path: "images/24_james_curran_1773427702706.png" },
+        { name: "Lucas Zanotto", high: "MEDITATIVE", desc: "Satisfying physics loops, minimal.", path: "images/25_lucas_zanotto_1773427703791.png" },
+        { name: "Motion Markus", high: "CHARACTER BOUNCE", desc: "Distinctive character animation.", path: "images/motionmarkus_portfolio_fix_1773510060421.png" },
+        { name: "Bee Grandinetti", high: "TEXTURE RICH", desc: "Organic tactile motion design.", path: "images/27_bee_grandinetti_1773427705687.png" },
+        { name: "Rafael Varona", high: "ILLUSTRATIVE", desc: "Intricate hybrids of loops.", path: "images/rafael_varona_portfolio_fix_1773509915170.png" },
+        { name: "Eran Hilleli", high: "ETHEREAL 3D", desc: "Low-poly expressive lighting.", path: "images/29_eran_hilleli_1773427736859.png" },
+        { name: "Ori Toor", high: "ORGANIC FLOW", desc: "Abstract loops, unique colors.", path: "images/30_ori_toor_1773427737233.png" },
+        { name: "Julian Glander", high: "ECCENTRIC", desc: "Bright, blobby, joyful worlds.", path: "images/31_julian_glander_1773427739849.png" },
+        { name: "Chris Gannon", high: "INTERACTIVE SVG", desc: "Code-driven motion design.", path: "images/32_chris_gannon_1773464133876.png" },
+        { name: "Henrique Barone", high: "TRADITIONAL DRAW", desc: "Frame-by-frame organic motion.", path: "images/33_henrique_barone_1773464134848.png" },
+        { name: "Koen De Mol", high: "TECH ART", desc: "Experimental physics and shaders.", path: "images/koendemol_portfolio_fix_1773512067300.png" },
+        { name: "Sander Van Dijk", high: "SYSTEMS DESIGN", desc: "Motion logic and clean UI.", path: "images/35_sander_van_dijk_1773464135700.png" },
+        { name: "ManvsMachine", high: "INDUSTRY STANDARD", desc: "Kinetic typography and brand design.", path: "images/manvsmachine_portfolio_1773476530224.png" },
+        { name: "FutureDeluxe", high: "DIGITAL GALLERY", desc: "Experimental digital art.", path: "images/futuredeluxe_portfolio_1773476555011.png" },
+        { name: "Tendril", high: "PHYSICAL WEB", desc: "Texture-heavy organic interaction.", path: "images/tendril_portfolio_1773476591326.png" },
+        { name: "Giant Ant", high: "STORYTELLING", desc: "Warm illustration-driven motion.", path: "images/giantant_portfolio_1773476625410.png" },
+        { name: "Oddfellows", high: "BOLD CREATIVE", desc: "Non-traditional navigation.", path: "images/oddfellows_portfolio_1773476770970.png" },
+        { name: "Psyop", high: "CGI LEADERS", desc: "Sophisticated grid, high-end reels.", path: "images/psyop_portfolio_1773476813924.png" },
+        { name: "The Mill", high: "VFX POWERHOUSE", desc: "Elite Hollywood standard VFX.", path: "images/themill_portfolio_1773477147913.png" },
+        { name: "Golden Wolf", high: "CULTURE TECH", desc: "Glitch vibes, energetic identity.", path: "images/goldenwolf_portfolio_1773477196702.png" },
+        { name: "Animade", high: "PLAYFUL WEB", desc: "Delightful hover animations.", path: "images/animade_portfolio_1773477240560.png" },
+        { name: "Studio Dumbar", high: "DYNAMIC BRAND", desc: "Kinetic typography, high-impact.", path: "images/studiodumbar_portfolio_1773477296845.png" },
+        { name: "Dia Studio", high: "GRID MASTERS", desc: "Systematic motion identity.", path: "images/diastudio_portfolio_1773477379688.png" },
+        { name: "BITO", high: "CULTURAL SYMBOL", desc: "Top tier Asian dynamic design.", path: "images/bito_portfolio_1773477409860.png" },
+        { name: "Aggressive", high: "STRONG ATTITUDE", desc: "Bold, punchy visual language.", path: "images/aggressive_portfolio_1773477787151.png" },
+        { name: "Blur Studio", high: "CGI LEGENDS", desc: "Cinematic game and film VFX.", path: "images/blur_portfolio_1773477893020.png" },
+        { name: "Framestore", high: "BLOCKBUSTER", desc: "Award-winning VFX portfolio.", path: "images/framestore_portfolio_1773478053928.png" }
+    ];
+
+    let artistsPool = [...artistsPoolFull].sort(() => Math.random() - 0.5);
+    let nextRoundPool = [];
+    let currentMatchIdx = 0;
+    let roundNum = 1;
+    let isTransitioning = false;
+
+    function renderMatch() {
+        if (artistsPool.length < 2) {
+            handleOfEndOfRound();
+            return;
+        }
+
+        const left = artistsPool[0];
+        const right = artistsPool[1];
+
+        // Fill content
+        document.getElementById('left-img').src = left.path;
+        document.getElementById('left-name').innerText = left.name;
+        document.getElementById('left-high').innerText = left.high;
+        document.getElementById('left-desc').innerText = left.desc;
+
+        document.getElementById('right-img').src = right.path;
+        document.getElementById('right-name').innerText = right.name;
+        document.getElementById('right-high').innerText = right.high;
+        document.getElementById('right-desc').innerText = right.desc;
+
+        // Animate In
+        const leftWrap = document.getElementById('left-wrapper');
+        const rightWrap = document.getElementById('right-wrapper');
+        
+        leftWrap.className = 'card-wrapper slide-in';
+        rightWrap.className = 'card-wrapper slide-in';
+
+        updateStatus();
+        
+        setTimeout(() => { isTransitioning = false; }, 600);
+    }
+
+    function processChoice(side) {
+        if (isTransitioning) return;
+        isTransitioning = true;
+
+        const leftWrap = document.getElementById('left-wrapper');
+        const rightWrap = document.getElementById('right-wrapper');
+
+        // Selection Effect
+        const cards = [document.getElementById('left-card'), document.getElementById('right-card')];
+        cards[side].style.borderColor = 'var(--accent)';
+        cards[side].style.boxShadow = '0 0 50px var(--accent-glow)';
+
+        setTimeout(() => {
+            // Anim Out
+            leftWrap.classList.add('slide-out-left');
+            rightWrap.classList.add('slide-out-right');
+
+            setTimeout(() => {
+                let winner = artistsPool.splice(0, 2)[side];
+                nextRoundPool.push(winner);
+                currentMatchIdx++;
+                
+                // Reset styles
+                cards[side].style.borderColor = '';
+                cards[side].style.boxShadow = '';
+
+                if (artistsPool.length < 2) {
+                    handleOfEndOfRound();
+                } else {
+                    renderMatch();
+                }
+            }, 600);
+        }, 300);
+    }
+
+    function handleOfEndOfRound() {
+        if (artistsPool.length === 1) {
+            let luckyWinner = artistsPool.pop();
+            nextRoundPool.push(luckyWinner);
+            document.getElementById('bye-name').innerText = luckyWinner.name;
+            document.getElementById('bye-notice').style.display = 'flex';
+        } else {
+            startNextRound();
+        }
+    }
+
+    function hideBye() {
+        document.getElementById('bye-notice').style.display = 'none';
+        startNextRound();
+    }
+
+    function startNextRound() {
+        if (nextRoundPool.length === 1) {
+            showWinner(nextRoundPool[0]);
+            return;
+        }
+
+        // Shuffle again for true randomness each round
+        artistsPool = [...nextRoundPool].sort(() => Math.random() - 0.5);
+        nextRoundPool = [];
+        roundNum++;
+        currentMatchIdx = 0;
+        
+        updateRoundTitle();
+        renderMatch();
+    }
+
+    function updateRoundTitle() {
+        let label = "Top Tier Finals";
+        let count = artistsPool.length;
+        if (count > 32) label = "Qualifying Stage";
+        else if (count > 16) label = "Elite 32 Battle";
+        else if (count > 8) label = "Knockout 16";
+        else if (count > 4) label = "Quarter Finals";
+        else if (count > 2) label = "Semi Finals";
+        else if (count === 2) label = "Grand Finale";
+        
+        document.getElementById('round-title').innerText = `Round ${roundNum}: ${label} (${count})`;
+    }
+
+    function updateStatus() {
+        const totalSurvivors = artistsPool.length + nextRoundPool.length;
+        document.getElementById('pool-size').innerText = totalSurvivors;
+        
+        let matchesInThisRound = Math.floor((artistsPool.length + currentMatchIdx * 2) / 2);
+        document.getElementById('progress-val').innerText = `${currentMatchIdx} / ${matchesInThisRound}`;
+        
+        // Progress Bar
+        const progressPercent = (currentMatchIdx / matchesInThisRound) * 100;
+        document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+    }
+
+    function showWinner(winner) {
+        document.getElementById('battle-container').style.display = 'none';
+        document.getElementById('status-bar').style.display = 'none';
+        document.getElementById('main-header').style.opacity = '0';
+        
+        document.getElementById('winner-screen').style.display = 'block';
+        document.getElementById('final-img').src = winner.path;
+        document.getElementById('final-name').innerText = winner.name;
+        document.getElementById('final-high').innerText = winner.high;
+        document.getElementById('final-desc').innerText = winner.desc;
+    }
+
+    // Initial Start
+    updateRoundTitle();
+    renderMatch();
+</script>
+</body>
+</html>

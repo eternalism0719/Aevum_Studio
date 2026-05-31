@@ -1,139 +1,139 @@
-﻿<!-- 
+<!-- 
 ================================================================================
 CHANGE LOG & VERSION HISTORY
 ================================================================================
-[Date]: 2026-05-20 (靽桀儔 PBR 鞎澆???鞈芣葡??
+[Date]: 2026-05-20 (修復 PBR 貼圖與材質渲染)
 [Author]: Antigravity
-[Scope]: c:\Users\User\Desktop\??雿??portfolio\3d_lab.html
+[Scope]: c:\Users\User\Desktop\光孚作品集\portfolio\3d_lab.html
 
 --------------------------------------------------------------------------------
-???祈??渡???靽桀儔 PBR 鞎澆??冽憛? LOGO 璅∪?銝?憿舐內銋?Bug (?脩戌?扳?鞈芷?撱箄?撌券?摰蝺刻陌)
+【版本變更紀錄】：修復 PBR 貼圖在方塊與 LOGO 模型上不顯示之 Bug (防禦性材質重建與巨集安全編譯)
 --------------------------------------------------------------------------------
-1. ?Ｚ??嚗?
-   - 雿輻??????孵?憿舐內銝剜?閬?roughness.normal ????賣?????LOGO 撅內??瘝???basecolor ???
-   - ???冽 Three.js 皜脫?蝞∠??翰??撌券?蝺刻陌璈嚗?
-     * ?嗆憛?`previewMeshes`嚗? LOGO 璅∪?嚗mainModel`嚗?活撱箇??釭????`map`?roughnessMap`?normalMap` ? null??
-     * ????Three.js ?典?甈∠楊霅?Shader ??瘝???`USE_MAP`?USE_ROUGHNESSMAP`?USE_NORMALMAP` 蝑楊??Macros嚗楊霅舫脣??
-     * 敺????晷鞎澆?銝西矽??`needsUpdate = true` ???券????隞嗡??⊥??閫貊 Three.js ?折????急?鞎澆?????脣嚗蝙敺票???函瘜?恍銝??整?
+1. 面臨問題：
+   - 使用者反應「目前的方塊顯示中感覺 roughness.normal 那些都沒有，在 LOGO 展示的部分更沒看到 basecolor 呈現」。
+   - 原因在於 Three.js 渲染管線的快取與巨集編譯機制：
+     * 當方塊（`previewMeshes`）與 LOGO 模型（`mainModel`）在初次建立材質時，其 `map`、`roughnessMap`、`normalMap` 皆為 null。
+     * 這導致 Three.js 在初次編譯 Shader 時，沒有把 `USE_MAP`、`USE_ROUGHNESSMAP`、`USE_NORMALMAP` 等巨集（Macros）編譯進去。
+     * 後續動態指派貼圖並調用 `needsUpdate = true` 時，在部分邊界條件下無法順利觸發 Three.js 內部重新生成含有貼圖分支的著色器，使得貼圖完全無法在畫面上呈現。
 
-2. ?琿??孵??批捆嚗?
-   - ?OGO ?釭?脩戌?折?撱箝?
-     * ??`applyCurrentParamsToModel` ?賢?銝哨???`child.material.userData` 撘 `presetKey`??
-     * ??`currentTransitionPresetKey` ??嚗 Preset ?潛??寡?嚗?嚗?格? preset ?粹?閬票?? `ROCK_MOSS` ??`WOOD`嚗???瘝輻??鞈迎??撘瑕?遣 `MeshPhysicalMaterial`嚗蒂?湔??constructor ?銝剝?蝵桀末 `map`?roughnessMap`?normalMap` 蝑惇?扼?
-     * ? 100% 撘瑕 Three.js 蝺刻陌?箸迤蝣箏???PBR 鞎澆??舀???Shader嚗蒂敺孵?閫?捱 `basecolor` 銝＊蝷箄?瘜?蝝啁?瘨仃??憿?
-     * ??嚗?舫? preset??嚗???Tweakpane ?敺株矽嚗????窒?冽?鞈迎?隞亦雁??????擃??Ｗ漲???賢像銵～?
-   - ?憛?鞈芷?撱箝?
-     * ??`updatePreviewMaterials()` 銝哨???`ROCK_MOSS` ??`WOOD` ?票???郊頛摰?敺??亦?曇府撅內?孵?撠?晷鞎澆?嚗map` 隞蝛綽?嚗?銝餃??遣閰脫憛? `MeshPhysicalMaterial`嚗?頛摰??票??亙??constructor嚗Ⅱ靽憛??賣迤蝣箸葡??孵??蝟敦蝭??
+2. 具體改動內容：
+   - 【LOGO 材質防禦性重建】：
+     * 在 `applyCurrentParamsToModel` 函式中，為 `child.material.userData` 引入 `presetKey`。
+     * 當 `currentTransitionPresetKey` 切換（即 Preset 發生改變）時，若目標 preset 為需要貼圖的 `ROCK_MOSS` 或 `WOOD`，我們不沿用舊材質，而是強制重建 `MeshPhysicalMaterial`，並直接在 constructor 參數中配置好 `map`、`roughnessMap`、`normalMap` 等屬性。
+     * 這能 100% 強制 Three.js 編譯出正確包含 PBR 貼圖支持的 Shader，並徹底解決 `basecolor` 不顯示與法線細節消失的問題。
+     * 同時，若是非 preset切換（僅為 Tweakpane 參數微調），則依舊沿用材質，以維持互動時的最高流暢度與效能平衡。
+   - 【方塊材質重建】：
+     * 在 `updatePreviewMaterials()` 中，當 `ROCK_MOSS` 或 `WOOD` 的貼圖非同步載入完成後，若發現該展示方塊尚未指派貼圖（`map` 仍為空），則主動重建該方塊的 `MeshPhysicalMaterial`，將載入完成的貼圖直接傳入 constructor，確保方塊也能正確渲染出凹凸與粗糙細節。
 
-3. ?孵?蝔?蝣澆?瘥?
-   - [updatePreviewMaterials ?賢? (蝝?1660-1680 銵?]嚗?
-     * ?踵?嚗??湔??鞈血潘??寧?菜葫?啗票??頛?敺蝳行折?撱?`MeshPhysicalMaterial`??
-   - [applyCurrentParamsToModel ?賢? (蝝?1327-1414 銵?]嚗?
-     * ?啣?嚗presetKey` ?菜葫??`hasPresetChanged` ?斗??
-     * ?踵?嚗 preset ?寡???Physical ?釭銝?韏唳窒?典??荔???脩戌?折??啣祕靘? `MeshPhysicalMaterial`??
+3. 改動程式碼對比：
+   - [updatePreviewMaterials 函式 (約 1660-1680 行)]：
+     * 替換：不直接動態賦值，改為偵測到貼圖加載完後防禦性重建 `MeshPhysicalMaterial`。
+   - [applyCurrentParamsToModel 函式 (約 1327-1414 行)]：
+     * 新增：`presetKey` 偵測與 `hasPresetChanged` 判斷。
+     * 替換：在 preset 改變時，Physical 材質不再走沿用分支，而是防禦性重新實例化 `MeshPhysicalMaterial`。
 
 --------------------------------------------------------------------------------
 [Date]: 2026-05-20
 [Author]: Antigravity
-[Scope]: c:\Users\User\Desktop\??雿??portfolio\3d_lab.html
+[Scope]: c:\Users\User\Desktop\光孚作品集\portfolio\3d_lab.html
 
 --------------------------------------------------------------------------------
-???祈??渡???撠?3D PBR 鞎澆??券????8-bit 1024x1024 擃???PNG嚗蒂?芸????
+【版本變更紀錄】：將 3D PBR 貼圖全面升級為 8-bit 1024x1024 高效能 PNG，並優化加載效能
 --------------------------------------------------------------------------------
-1. ?Ｚ??嚗?
-   - ??雿輻 4K .exr ??4K .jpg 鞎澆?嚗??湔?獢之撠扔?園?憭改????汗?刻??交????瑯RAM 憿舐內閮擃??嚗??喳?賡?雿??身??銵?鋆蔭??WebGL 撏拇蔑??
-   - 銝?.exr 鞎澆???32-bit/16-bit 瘚桅??豢撘 WebGL ??其葉?交憒亙?撠?璅? LDR 閫?Ⅳ嚗捆??像?艾蝝啁????舀?蝺圾蝣潛撣貊?閬死?航炊??
+1. 面臨問題：
+   - 原始使用 4K .exr 與 4K .jpg 貼圖，導致檔案大小極其龐大，造成瀏覽器載入時間過長、VRAM 顯示記憶體嚴重耗損，甚至可能造成低配備設備或行動裝置的 WebGL 崩潰。
+   - 且 .exr 貼圖的 32-bit/16-bit 浮點數格式在 WebGL 著色器中若未妥善對應標準 LDR 解碼，容易產生平坦、無細節、或是法線解碼異常的視覺錯誤。
 
-2. ?琿??孵??批捆嚗?
-   - ?票???亙?撘?瑽?
-     * 撠?`ROCK_MOSS` ?票?楝敺?箄?????1024x1024 PNG 鞎澆?嚗?
+2. 具體改動內容：
+   - 【貼圖載入器與格式重構】：
+     * 將 `ROCK_MOSS` 的貼圖路徑改為轉換後的 1024x1024 PNG 貼圖：
        - Base Color (map): `./3D_shader/rock_moss/rock_moss_base_color.png`
        - Roughness (roughnessMap): `./3D_shader/rock_moss/rock_moss_rough.png`
        - Normal (normalMap): `./3D_shader/rock_moss/rock_moss_normal.png`
-     * 撠?`WOOD` ?票?楝敺?箄?????1024x1024 PNG 鞎澆?嚗?
+     * 將 `WOOD` 的貼圖路徑改為轉換後的 1024x1024 PNG 貼圖：
        - Base Color (map): `./3D_shader/wood/wood_base_color.png`
        - Roughness (roughnessMap): `./3D_shader/wood/wood_rough.png`
        - Normal (normalMap): `./3D_shader/wood/wood_normal.png`
-     * ????鞎澆??歇頧???8-bit PNG ?澆?嚗?甇文???其??? .exr ??`exrLoader.load` ?券?湔?箸?皞?擃???`texLoader.load`??
-     * 憭批?蝪∪?鈭?PBR 鞎澆???頛?頛荔?雿輯??亥?閫???漲?脣?憿航????賣???
+     * 因為所有的貼圖均已轉換為 8-bit PNG 格式，因此將原本用來加載 .exr 的 `exrLoader.load` 全部更改為標準且高效的 `texLoader.load`。
+     * 大幅簡化了 PBR 貼圖的加載邏輯，使載入與解析速度獲得顯著的效能提升。
 
-3. ?孵?蝔?蝣澆?瘥?
-   - [loadPBRTextures ?賢? (蝝?1652-1706 銵?]嚗?
-     * 撠??? `exrLoader.load` ?湔??`texLoader.load`??
-     * 撠???4K .jpg ??4K .exr ?票?楝敺??踵???1024 .png 頝臬???
+3. 改動程式碼對比：
+   - [loadPBRTextures 函式 (約 1652-1706 行)]：
+     * 將所有的 `exrLoader.load` 更改為 `texLoader.load`。
+     * 將原先 4K .jpg 與 4K .exr 的貼圖路徑，替換為 1024 .png 路徑。
 
 --------------------------------------------------------------------------------
 [Date]: 2026-05-19
 [Author]: Antigravity
-[Scope]: c:\Users\User\Desktop\??雿??portfolio\3d_lab.html
+[Scope]: c:\Users\User\Desktop\光孚作品集\portfolio\3d_lab.html
 
 --------------------------------------------------------------------------------
-???祈??渡???靽桀儔 LOGO 頛??蝮格??銝剖?蝘餉◤??閬神銋?Bug (?脫迫雿蔭?之撠?雿?
+【版本變更紀錄】：修復 LOGO 載入初始縮放與居中偏移被意外覆寫之 Bug (防止位置與大小跑位)
 --------------------------------------------------------------------------------
-1. ?Ｚ??嚗?
-   - 雿輻???OGO??蝵桀?憭批?鋡急?憭?唬???
-   - ???冽 LOGO 璅∪?嚗mainModel`嚗?? GLB ??憒? `isCustom` ??true嚗?閮??箔????拍??芷?葬?曆???`scale` 銝西矽??`setScalar(scale)` 隞亙?撅葉雿蔭?宏 `sub(center.multiplyScalar(scale))`??
-   - ?嗉??典????芾?頧??銝哨??券?頧????蔭?嚗誑?獢?A嚗ATER嚗獢?C嚗OLO嚗?皜脫?畾菔嚗′蝺函Ⅳ雿輻鈭?`mainModel.scale.set(1.0, 1.0, 1.0)`??
-   - ?冽獢?B嚗ETAL嚗?蝮格?潸?蝞葉嚗??臬??`1.0` 雿蝮格瘥?嚗頧?蔭??亙?蝮格撘瑕甇訾???`1.0`??
-   - ??亥??蒂?扳?鈭?LOGO 頛???芷?葬?暹?靘?銋??箇葬?暹?靘??游?嚗??渲?閬箔???敶勗之撠?蝵桐葉?宏???典仃銵～?
+1. 面臨問題：
+   - 使用者反應「LOGO的位置和大小被意外改到了」。
+   - 原因在於 LOGO 模型（`mainModel`）在加載 GLB 時，如果 `isCustom` 為 true，會計算出一個合適的自適應縮放係數 `scale` 並調用 `setScalar(scale)` 以及居中位置偏移 `sub(center.multiplyScalar(scale))`。
+   - 然而，在先前的自訂轉場重構中，在非轉場狀態的重置分支，以及方案 A（WATER）、方案 C（HOLO）的渲染段落，硬編碼使用了 `mainModel.scale.set(1.0, 1.0, 1.0)`。
+   - 在方案 B（METAL）的縮放插值計算中，也是基於 `1.0` 作為縮放比例，在轉場重置時直接將縮放強制歸位為 `1.0`。
+   - 這直接覆蓋並摧毀了 LOGO 載入時的自適應縮放比例，也因為縮放比例的破壞，導致視覺上的投影大小與置中偏移量完全失衡。
 
-2. ?琿??孵??批捆嚗?
-   - ?芋???仿?頛臬??
-     * ?典?頛?`mainModel` ??traverse ?憛?蝝?1675-1685 銵?嚗???/蝵桐葉閮?摰敺??蝯葬?暹?靘?`mainModel.scale.x` ?脣???`mainModel.userData.originScale`??
-     * ??撠蔭銝剖?蝘餃????游?憪?蝬剖?璅?鋆賢摮 `mainModel.userData.originPosition = mainModel.position.clone()`嚗??箏??望???撠?璅頝??箸???
-   - ?頝?摰??
-     * ??`animate()` 瘚桀???憛?蝝?1970 銵椰?喉?嚗憓頝???撘瑕撠?`mainModel.position.x` ??`mainModel.position.z` ????`originPosition` ??憪潔?嚗?蝯遙雿???雿?皜脫?霈耦撠 X/Z 頠詨?璅??Ｕ?
-   - ???渡葬?暸?頛舫?瑽?
-     * ?冽獢?A (WATER) ??scale ??暺?撠?`scale.set(1.0, 1.0, 1.0)` ?寧 `scale.setScalar(mainModel.userData.originScale || 1.0)`??
-     * ?冽獢?B (METAL) ?葬?暹??潸?蝞葉嚗??澆?訾?隞?`origS`嚗const s = THREE.MathUtils.smoothstep(scaleVal, 0.0, 1.0) * origS`嚗?銝虫蝙??`scale.setScalar(s)`嚗?霅葬?曄移皞??啣?憪??交?靘?
-     * ?冽獢?C (HOLO) ??scale ??暺?撠?`scale.set(1.0, 1.0, 1.0)` ?寧 `scale.setScalar(mainModel.userData.originScale || 1.0)`??
-     * ?券?頧?蔭???嚗? `scale.set(1.0, 1.0, 1.0)` ?寧 `scale.setScalar(mainModel.userData.originScale || 1.0)`??
+2. 具體改動內容：
+   - 【模型載入邏輯優化】：
+     * 在加載 `mainModel` 的 traverse 區塊（約 1675-1685 行），將加載/置中計算完畢後的最終縮放比例 `mainModel.scale.x` 儲存為 `mainModel.userData.originScale`。
+     * 同時將置中偏移後的完整初始三維坐標複製儲存為 `mainModel.userData.originPosition = mainModel.position.clone()`，作為全生命週期的絕對坐標防跑位基準。
+   - 【防跑位安全鎖】：
+     * 在 `animate()` 浮動動畫區塊（約 1970 行左右），新增防跑位鎖：強制將 `mainModel.position.x` 與 `mainModel.position.z` 鎖定在 `originPosition` 的初始值上，杜絕任何外界操作或渲染變形導致 X/Z 軸坐標偏離。
+   - 【轉場縮放邏輯重構】：
+     * 在方案 A (WATER) 的 scale 還原點，將 `scale.set(1.0, 1.0, 1.0)` 改為 `scale.setScalar(mainModel.userData.originScale || 1.0)`。
+     * 在方案 B (METAL) 的縮放插值計算中，將插值基數乘以 `origS`（`const s = THREE.MathUtils.smoothstep(scaleVal, 0.0, 1.0) * origS`），並使用 `scale.setScalar(s)`，保證縮放精準回到初始載入比例。
+     * 在方案 C (HOLO) 的 scale 還原點，將 `scale.set(1.0, 1.0, 1.0)` 改為 `scale.setScalar(mainModel.userData.originScale || 1.0)`。
+     * 在非轉場重置狀態下，將 `scale.set(1.0, 1.0, 1.0)` 改為 `scale.setScalar(mainModel.userData.originScale || 1.0)`。
 
-3. ?孵?蝔?蝣澆?瘥?
-   - [GLB 頛?憛?(蝝?1675-1685 銵?]嚗?
-     + ?啣?嚗mainModel.userData.originScale` ??`mainModel.userData.originPosition` ??憪??脣???
-   - [animate 瘚桀???憛?(蝝?1968-1975 銵?]嚗?
-     + ?啣?嚗?摰?X ??Z 頠詨?璅????雿蔭?霅琿?頛胯?
-   - [animate 頧??蝵桀?憛?(蝝?2025-2355 銵?]嚗?
-     + ?踵?嚗獢?A? 隞亙????渡???嚗??? `mainModel.scale.set(1.0, 1.0, 1.0)` ???`mainModel.scale.setScalar(origS)`??
-     + ?踵?嚗獢?B 銝哨?蝮格?潸?蝞銋誑 `origS` 隞乩??箇葬?暹?靘摨?
+3. 改動程式碼對比：
+   - [GLB 載入區塊 (約 1675-1685 行)]：
+     + 新增：`mainModel.userData.originScale` 與 `mainModel.userData.originPosition` 的初始化儲存。
+   - [animate 浮動動畫區塊 (約 1968-1975 行)]：
+     + 新增：鎖定 X 與 Z 軸坐標至原始加載位置的防護邏輯。
+   - [animate 轉場與重置區塊 (約 2025-2355 行)]：
+     + 替換：方案 A、C 以及非轉場狀態下，所有的 `mainModel.scale.set(1.0, 1.0, 1.0)` 皆改為 `mainModel.scale.setScalar(origS)`。
+     + 替換：方案 B 中，縮放插值計算改乘以 `origS` 以作為縮放比例基底。
 
 --------------------------------------------------------------------------------
 [Date]: 2026-05-18
 [Author]: Antigravity
-[Scope]: c:\Users\User\Desktop\??雿??portfolio\3d_lab.html
+[Scope]: c:\Users\User\Desktop\光孚作品集\portfolio\3d_lab.html
 
 --------------------------------------------------------------------------------
-???祈??渡????釭?芾?頧?寞??拍???蝎?蝟餌絞??
+【版本變更紀錄】：材質自訂轉場特效物理化與粒子系統重構
 --------------------------------------------------------------------------------
-1. ?Ｚ??嚗?
-   - ??頧???摮????澆銝嚗蜓閬蝪∪??銝?????身?嗥葬嚗瘜?憿?Water?etal ??Holo ??寞?鞈芸惇?扯?擃??閬箄釭??
-   - 銝車頧?寞?嚗獢?A?獢?B?獢?C嚗?????冽?潸?蝎??拍?璅∪?銝?蝎曄Ⅱ嚗??湔?蝻箔????閬箏撐???∠葦???
+1. 面臨問題：
+   - 舊版轉場動畫的粒子效果過於單一，主要是簡單的向上飄散或預設收縮，無法突顯 Water、Metal 與 Holo 的獨特材質屬性與高擬真視覺質感。
+   - 三種轉場方案（方案 A、方案 B、方案 C）的頂點著色器數值與粒子物理模型不夠精確，轉場時缺乏震撼的視覺張力與無縫銜接感。
 
-2. ?琿??孵??批捆嚗?
-   - ?ater (?寞? A)??
-     * 撠???Preset 摰儔??0.0??
-     * 閮剖???瘞湔郭韏瑚??嚗蝙 `sharedDistortion.value` ?熄閫?脣漲 `sharedDissolve.value` ?郊?典??挾嚗?.0 -> 0.5嚗楨蝺拙?韏瘀?銝血敺?畾蛛?0.5 -> 1.0嚗?皛?銝?
-     * 撠?摮?瑽?啗??脫偌?梁?摮?銝血 `animate()` 銝剜芋?祉移蝣箇??箸?銝??拍?頠楚??敺頧銝剜挾嚗?.5嚗蝺誑?葉閬死嚗蒂?券??刻?嗥???憭批?撘瑕?瘞港?瘚?蝢???
-   - ?etal (?寞? B)??
-     * 撠???Preset 摰儔??1.0??
-     * 撠?撠潭??菟?瘜Ｙ?芋????`transitionProgress < 0.5` ?霈凝撟?皞恬?0.0 -> 0.25嚗??園脣漲?圈??函??脫?暺?`0.5` ????貉??詨?`sharedDistortion.value` ?祇??游???1.5嚗蒂?典??∠ `Amp * e^(-damping * t) * cos(freq * t)` ?拍??砍??脰?擃?餃側銵唳??嚗?蝢芋?祇?皞恍?????仿????
-     * ?典????賢嚗?657 銵絲嚗葉嚗 METAL ?釭????撅祉?摮?雿踹?券???誑擃?憭?瞈箝?
-     * 蝎????粹?皞怎?梧????單?蝝撓霈?嚗蒂??`animate()` 銝剖??仿????漲嚗data.vy -= 0.0022`嚗?蝛箸除?餃?嚗0.96` 銵唳?嚗???`0.5` ?函?暺??潔?甈∠???瞈綽??潛????萇??曹?憓???
-   - ?olo (?寞? C)??
-     * 撠???Preset 摰儔??2.0??
-     * ?冽瘨?擃漲 `holoVal` ?寧??畾萇銝?銝???-2.0 -> 2.0嚗?敺?畾萇銝?銝?瑽?2.0 -> -2.0嚗?
-     * 蝎????粹??寞扔???嚗瘨????? `holoVal` (簣0.2) ??????蝑???貊嚗蒂??X/Z 頠訾???擃甇?憐瘜Ｘ???璅⊥?冽?訾??芾??僕?曇???嚗??蝯?敺???啁??????貊嚗??蝮怎??訾?頧閬死????
-   - ??撘??具?
-     * 靽????頧?????蝵桅?頛荔?銝衣Ⅱ靽??潛頂蝯勗瘝??釭??摰????
+2. 具體改動內容：
+   - 【Water (方案 A)】：
+     * 將轉場 Preset 定義為 0.0。
+     * 設定頂點水波起伏動畫，使 `sharedDistortion.value` 與溶解進度 `sharedDissolve.value` 同步在前半段（0.0 -> 0.5）緩緩升起，並在後半段（0.5 -> 1.0）順滑降下。
+     * 將粒子重構為冰藍色水花粒子，並在 `animate()` 中模擬精確的螺旋上升物理軌跡。半徑在轉場中段（0.5）收緊以集中視覺，並在頂部自然發散，大幅強化水之流動美感。
+   - 【Metal (方案 B)】：
+     * 將轉場 Preset 定義為 1.0。
+     * 導入「阻尼打鐵震波物理模型」，在 `transitionProgress < 0.5` 時畸變微幅升溫（0.0 -> 0.25）；當進度到達臨界敲擊點 `0.5` 的瞬間，畸變數值 `sharedDistortion.value` 瞬間暴增至 1.5，並隨後採用 `Amp * e^(-damping * t) * cos(freq * t)` 物理公式進行高頻阻尼衰減震盪，完美模擬高溫鍛造敲擊與急速冷凝效果。
+     * 在卡片點擊監聽器（1657 行起）中，為 METAL 材質初始化專屬粒子，使其在點擊瞬間以高速向外飛濺。
+     * 粒子重構為高溫火花（金黃至暗紅漸變），並在 `animate()` 中加入重力加速度（`data.vy -= 0.0022`）與空氣阻力（`0.96` 衰減），在 `0.5` 臨界點爆發二次猛烈飛濺，逼真還原鐵砧鍛造火花下墜效果。
+   - 【Holo (方案 C)】：
+     * 將轉場 Preset 定義為 2.0。
+     * 全息消融高度 `holoVal` 改為前半段由下往上消融（-2.0 -> 2.0），後半段由上往下重構（2.0 -> -2.0）。
+     * 粒子重構為霓虹極光青藍色，在消融掃描邊界 `holoVal` (±0.2) 處動態生成，筆直向上蒸發，並在 X/Z 軸上疊加高頻正弦波抖動（模擬全息數位噪訊與干擾訊號感），生命結束後自動回到當前掃描線重新蒸發，達成無縫的數位轉場視覺效果。
+   - 【程式安全】：
+     * 保留所有非轉場狀態下的重置邏輯，並確保插值系統在沒有材質時的安全邊界。
 
-3. ?孵?蝔?蝣澆?瘥?
-   - [?∠?暺????冽??(蝝?1715-1730 銵?]嚗?
-     + ?啣?嚗?撠?METAL ?獢??券????憪?蝎?????瞈箏??漲????
-   - [animate 皜脫?敺芰?湔 (蝝?1980-2265 銵?]嚗?
-     + ?踵?嚗獢?A (WATER) ???貉??湔????摮????蝔???
-     + ?踵?嚗獢?B (METAL) ?餃側銵唳??貉?璅∪??葆??/蝛箸除?餃???暺?曹?憓?蝔?.
-     + ?踵?嚗獢?C (HOLO) ??蝺?????摨血摰??冽?訾?撟脫???貊???寧?撘?
+3. 改動程式碼對比：
+   - [卡片點擊監聽器更新 (約 1715-1730 行)]：
+     + 新增：針對 METAL 鍛造方案，在點擊瞬間初始化粒子的高速飛濺初速度與狀態。
+   - [animate 渲染循環更新 (約 1980-2265 行)]：
+     + 替換：方案 A (WATER) 頂點畸變更新與螺旋冰藍粒子上升運動方程式。
+     + 替換：方案 B (METAL) 阻尼衰減畸變模型與帶重力/空氣阻力的金黃火花下墜物理方程式.
+     + 替換：方案 C (HOLO) 掃描線消融生成高度判定與全息數位干擾抖動蒸發運動方程式。
 ================================================================================
 -->
 <!DOCTYPE html>
@@ -146,14 +146,14 @@ CHANGE LOG & VERSION HISTORY
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* CSS 霈摰儔 (瘛望滓?脖蜓憿? */
+        /* CSS 變數定義 (深淺色主題) */
         :root {
-            /* 摮?摰儔 */
+            /* 字體定義 */
             --font-headline: 'Space Grotesk', sans-serif;
             --font-body: 'Inter', sans-serif;
             --font-mono: 'JetBrains Mono', monospace;
 
-            /* 瘛梯璅∪? (?身) */
+            /* 深色模式 (預設) */
             --bg-color: #050508;
             --text-color: #ffffff;
             --text-dim: rgba(255, 255, 255, 0.6);
@@ -167,7 +167,7 @@ CHANGE LOG & VERSION HISTORY
         }
 
         [data-theme="light"] {
-            /* 瘛箄璅∪? - ?芸?? */
+            /* 淺色模式 - 優化配色 */
             --bg-color: #f8fafc;
             --text-color: #0f172a;
             --text-dim: #64748b;
@@ -192,7 +192,7 @@ CHANGE LOG & VERSION HISTORY
             position: relative;
         }
 
-        /* ? Hero ?憛?(? 3D ?椰??UI) */
+        /* 頂部 Hero 區塊 (包含 3D 與左側 UI) */
         #hero-section {
             width: 100%;
             height: 100vh;
@@ -203,7 +203,7 @@ CHANGE LOG & VERSION HISTORY
             position: absolute;
             inset: 0;
             z-index: 1;
-            /* ??宏?單迨??銝血??冽蕪?⊥??斤?扳? */
+            /* 背景圖移至此處，並套用濾鏡消除灰霧感 */
             background-image: url('./3D_reference/3D_lab_black_BG.png');
             background-size: cover;
             background-position: center;
@@ -213,15 +213,15 @@ CHANGE LOG & VERSION HISTORY
 
         [data-theme="light"] #bg-image-layer {
             background-image: url('./3D_reference/3D_lab_white_BG.png');
-            filter: none; /* 鈭株?虜銝?閬?圈 */
+            filter: none; /* 亮色版通常不需要去灰霧 */
         }
 
-        /* 3D ?怠? (皛輻?) */
+        /* 3D 畫布 (滿版) */
         #canvas-container {
             position: absolute;
             inset: 0;
             z-index: 10;
-            pointer-events: auto; /* ?迂??3D 鈭? */
+            pointer-events: auto; /* 允許與 3D 互動 */
         }
 
         canvas {
@@ -230,14 +230,14 @@ CHANGE LOG & VERSION HISTORY
             height: 100%;
         }
 
-        /* ??征敶梁?撅?(?刻??臬??嚗?渡征?質?) */
+        /* 背景星空影片層 (在背景圖前方，右側空白處) */
         #video-bg-container {
             position: absolute;
             top: 0;
             right: 0;
-            width: 35vw; /* 敺?喳?銝暺?皜?撖砍漲 */
+            width: 35vw; /* 往右切一點，減少寬度 */
             height: 100vh;
-            z-index: 2; /* ?刻??臬?銋?嚗雁?頧敶梁?敺隞仿???Alpha ?? */
+            z-index: 2; /* 在背景圖之前，維持在轉場影片後方以配合 Alpha 通道 */
             overflow: hidden;
             mask-image: linear-gradient(to right, transparent, black 40%);
             -webkit-mask-image: linear-gradient(to right, transparent, black 40%);
@@ -245,23 +245,23 @@ CHANGE LOG & VERSION HISTORY
             pointer-events: none;
         }
 
-        /* ?餌???撅歹??敶梁?銝嚗ˊ?????敺格?撠釭??*/
+        /* 玻璃折射層：蓋在影片上方，製造玻璃反光與微折射質感 */
         #video-bg-container::after {
             content: '';
             position: absolute;
             inset: 0;
             z-index: 3;
-            /* 璅⊥?餌???嚗??漁摨?撠? (?⊥芋蝟? */
+            /* 模擬玻璃折射：提升亮度/對比 (無模糊) */
             backdrop-filter: brightness(1.15) contrast(1.05);
             -webkit-backdrop-filter: brightness(1.15) contrast(1.05);
-            /* ?餌?銵券???撓撅?*/
+            /* 玻璃表面的反光漸層 */
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 40%, rgba(0, 0, 0, 0.1) 100%);
-            /* ?餌??楠????摨行? */
+            /* 玻璃邊緣的高光厚度感 */
             box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.15), inset -1px -1px 0 rgba(0, 0, 0, 0.2);
         }
 
         [data-theme="light"] #video-bg-container {
-            z-index: 0; /* Light mode 敶梁??函?脰???PNG (z-index:1) 敺嚗????? */
+            z-index: 0; /* Light mode 影片在白色背景 PNG (z-index:1) 後面，從透明區域透出 */
         }
         
         .bg-video-layer {
@@ -269,14 +269,14 @@ CHANGE LOG & VERSION HISTORY
             transition: opacity 0.5s ease;
         }
 
-        /* Dark mode ?身憿舐內嚗身??0.8嚗-index 頛?隞亥?? light 敶梁?銋? */
+        /* Dark mode 預設顯示，設為 0.8，z-index 較高以覆蓋在 light 影片之上 */
         #bg-video-dark {
             opacity: 0.8;
             pointer-events: none;
             z-index: 2;
         }
 
-        /* Light mode 敶梁??怠敺嚗?閮剝??*/
+        /* Light mode 影片含在後面，預設隱藏 */
         #bg-video-light {
             opacity: 0;
             pointer-events: none;
@@ -288,7 +288,7 @@ CHANGE LOG & VERSION HISTORY
         }
 
         [data-theme="light"] #bg-video-light {
-            opacity: 1 !important; /* Light mode 敶梁?銝???摨佗?100% */
+            opacity: 1 !important; /* Light mode 影片不壓透明度，100% */
         }
 
         [data-theme="light"] #video-bg-container::after {
@@ -296,7 +296,7 @@ CHANGE LOG & VERSION HISTORY
             box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.4), inset -1px -1px 0 rgba(0, 0, 0, 0.05);
         }
 
-        /* 撌血?折?餌??Ｘ (瘚桃征?銵冽憸冽) */
+        /* 左側霧面玻璃面板 (浮空儀表板風格) */
         #left-panel {
             position: absolute;
             left: 30px;
@@ -334,7 +334,7 @@ CHANGE LOG & VERSION HISTORY
             box-shadow: 0 20px 50px -10px rgba(15, 23, 42, 0.15);
         }
 
-        /* 銝撱嗡撓撅內瑹?憛?(Scrollable) */
+        /* 下方延伸展示櫃區塊 (Scrollable) */
         #showcase-section {
             width: 100%;
             min-height: 100vh;
@@ -356,7 +356,7 @@ CHANGE LOG & VERSION HISTORY
                         var(--bg-color);
         }
 
-        /* ?折蝬脫雿? */
+        /* 內部網格佈局 */
         .showcase-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -364,7 +364,7 @@ CHANGE LOG & VERSION HISTORY
             margin-top: 40px;
         }
 
-        /* 撅內?∠? */
+        /* 展示卡片 */
         .showcase-card {
             height: 380px;
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%);
@@ -413,7 +413,7 @@ CHANGE LOG & VERSION HISTORY
             align-items: center;
             border: 1px solid rgba(255, 255, 255, 0.06);
             box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.3);
-            pointer-events: none; /* 霈??忽??∠??祇? */
+            pointer-events: none; /* 讓點擊穿透至卡片本體 */
             transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
@@ -515,7 +515,7 @@ CHANGE LOG & VERSION HISTORY
             background: rgba(255, 255, 255, 0.5) !important;
         }
 
-        /* Active / Hover ???擃?閬死?? */
+        /* Active / Hover 狀態的高級視覺反饋 */
         .showcase-card:hover {
             background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 100%);
             border-color: var(--card-accent);
@@ -555,9 +555,9 @@ CHANGE LOG & VERSION HISTORY
             transform: translateY(-4px);
         }
 
-        /* 銝駁?????(Switcher Trap) */
+        /* 主題切換器 (Switcher Trap) */
         .theme-switcher {
-            position: fixed; /* ?寧 fixed嚗遝??靽??函?Ｖ? */
+            position: fixed; /* 改為 fixed，滾動時保持在畫面上 */
             top: 40px;
             right: 40px;
             z-index: 50;
@@ -624,11 +624,11 @@ CHANGE LOG & VERSION HISTORY
             transform: translateX(24px);
         }
 
-        /* 頧?典?Ｗ??敶梁?摰孵 */
+        /* 轉場用全螢幕背景影片容器 */
         #transition-video-container {
             position: absolute;
             inset: 0;
-            z-index: 8; /* ?? z-index嚗?函撣?10)銋?嚗?擃?嗡??(5) */
+            z-index: 8; /* 提高 z-index，放在畫布(10)之下，但高於其他背景(5) */
             pointer-events: none;
             overflow: hidden;
             display: flex;
@@ -643,7 +643,7 @@ CHANGE LOG & VERSION HISTORY
             object-fit: cover;
             visibility: hidden;
             opacity: 0;
-            transition: opacity 0.1s ease; /* 蝮桃瞍貉???嚗嗾銋???*/
+            transition: opacity 0.1s ease; /* 縮短漸變時間，幾乎瞬間出現 */
         }
 
         .transition-bg-video.active {
@@ -651,8 +651,8 @@ CHANGE LOG & VERSION HISTORY
             opacity: 1;
         }
 
-        /* 璅??蝷見撘?*/
-        /* 璅??蝷見撘?*/
+        /* 標題與基礎樣式 */
+        /* 標題與基礎樣式 */
         .lab-title-wrap {
             display: flex;
             flex-direction: column;
@@ -875,10 +875,10 @@ CHANGE LOG & VERSION HISTORY
         /* --- End Topbar CSS --- */
 
         :root {
-            --user-color: #ffffff; /* 頝 color picker ?單??湔 */
+            --user-color: #ffffff; /* 跟隨 color picker 即時更新 */
         }
 
-        /* 撠惇?▼璅??閬神 */
+        /* 專屬拉桿樣式覆寫 */
         .custom-slider {
             -webkit-appearance: none;
             width: 100%;
@@ -953,7 +953,7 @@ CHANGE LOG & VERSION HISTORY
             -moz-appearance: textfield;
         }
 
-        /* ?踹? input color 憭? */
+        /* 避免 input color 外框 */
         input[type="color"]::-webkit-color-swatch-wrapper {
             padding: 0;
         }
@@ -961,7 +961,7 @@ CHANGE LOG & VERSION HISTORY
             border: 1px solid rgba(255,255,255,0.2);
             border-radius: 2px;
         }
-        /* ?梯? number input 銝?蝞剝 */
+        /* 隱藏 number input 上下箭頭 */
         .hide-arrows::-webkit-outer-spin-button,
         .hide-arrows::-webkit-inner-spin-button {
             -webkit-appearance: none;
@@ -992,25 +992,25 @@ CHANGE LOG & VERSION HISTORY
         </nav>
     </header>
 
-    <!-- 銝駁?????(?箏??澆銝? -->
-    <div class="theme-switcher" style="top: 100px;"> <!-- ???函宏嚗?◤撠汗???-->
+    <!-- 主題切換器 (固定於右上) -->
+    <div class="theme-switcher" style="top: 100px;"> <!-- 向下推移，避免被導覽列遮擋 -->
         <span class="label-dark">DARK</span>
         <div class="switch-trap" id="theme-toggle"></div>
         <span class="label-light">LIGHT</span>
     </div>
 
-    <!-- 擐????(100vh) -->
+    <!-- 首屏區域 (100vh) -->
     <div id="hero-section">
         <div id="bg-image-layer"></div>
-        <!-- 頧?敶梁? -->
+        <!-- 轉場背景影片 -->
         <div id="transition-video-container">
-            <!-- 敺?Dark 霈?Light ?蔣??-->
+            <!-- 從 Dark 變 Light 的影片 -->
             <video id="vid-bg-b2w" class="transition-bg-video" src="./videos/web_switcher/website_themetrans_blacktowhite.webm" muted playsinline preload="auto"></video>
-            <!-- 敺?Light 霈?Dark ?蔣??-->
+            <!-- 從 Light 變 Dark 的影片 -->
             <video id="vid-bg-w2b" class="transition-bg-video" src="./videos/web_switcher/website_themetrans_whitetoblack.webm" muted playsinline preload="auto"></video>
         </div>
 
-        <!-- 撌血?Ｘ -->
+        <!-- 左側面板 -->
         <div id="left-panel">
             <div class="panel-header" style="border-bottom: none; background: transparent; padding-bottom: 5px;">
                 <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-color); font-weight: 700; letter-spacing: 1.5px; margin-bottom: 6px; display: inline-flex; flex-direction: column;">
@@ -1130,7 +1130,7 @@ CHANGE LOG & VERSION HISTORY
             </div>
         </div>
 
-        <!-- ?敶梁?撅?-->
+        <!-- 背景影片層 -->
         <div id="video-bg-container">
             <!-- Dark Mode Video -->
             <video id="bg-video-dark" class="bg-video-layer" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover; object-position: right center; transform: scale(0.68); transform-origin: right center; z-index: 1;">
@@ -1142,11 +1142,11 @@ CHANGE LOG & VERSION HISTORY
             </video>
         </div>
 
-        <!-- 3D 皜脫????-->
+        <!-- 3D 渲染區域 -->
         <div id="canvas-container"></div>
     </div>
 
-    <!-- 銝撅內瑹???(??撱嗡撓) -->
+    <!-- 下方展示櫃區域 (向下延伸) -->
     <div id="showcase-section">
         <div class="section-header">
             <div class="section-title">Model Showcase</div>
@@ -1154,7 +1154,7 @@ CHANGE LOG & VERSION HISTORY
         </div>
         
         <div class="showcase-grid">
-            <!-- 撅內?∠? 00 (Glass) -->
+            <!-- 展示卡片 00 (Glass) -->
             <div class="showcase-card active" data-material-key="GLASS" style="--card-accent: #ffffff; --card-accent-glow: rgba(255, 255, 255, 0.25);">
                 <div class="card-preview" data-material="GLASS"></div>
                 <div class="card-status-line">
@@ -1166,7 +1166,7 @@ CHANGE LOG & VERSION HISTORY
                     <div class="card-name">GLASS_SIM.glb</div>
                 </div>
             </div>
-            <!-- 撅內?∠? 01 (Water) -->
+            <!-- 展示卡片 01 (Water) -->
             <div class="showcase-card" data-material-key="WATER" style="--card-accent: #00d2ff; --card-accent-glow: rgba(0, 210, 255, 0.25);">
                 <div class="card-preview" data-material="WATER"></div>
                 <div class="card-status-line">
@@ -1178,7 +1178,7 @@ CHANGE LOG & VERSION HISTORY
                     <div class="card-name">WATER_SIM.glb</div>
                 </div>
             </div>
-            <!-- 撅內?∠? 02 (Jelly) -->
+            <!-- 展示卡片 02 (Jelly) -->
             <div class="showcase-card" data-material-key="JELLY" style="--card-accent: #ff60b5; --card-accent-glow: rgba(255, 96, 181, 0.25);">
                 <div class="card-preview" data-material="JELLY"></div>
                 <div class="card-status-line">
@@ -1190,7 +1190,7 @@ CHANGE LOG & VERSION HISTORY
                     <div class="card-name">JELLY_SIM.glb</div>
                 </div>
             </div>
-            <!-- 撅內?∠? 03 (Metal) -->
+            <!-- 展示卡片 03 (Metal) -->
             <div class="showcase-card" data-material-key="METAL" style="--card-accent: #d1d5db; --card-accent-glow: rgba(209, 213, 219, 0.25);">
                 <div class="card-preview" data-material="METAL"></div>
                 <div class="card-status-line">
@@ -1202,7 +1202,7 @@ CHANGE LOG & VERSION HISTORY
                     <div class="card-name">METAL_SIM.glb</div>
                 </div>
             </div>
-            <!-- 撅內?∠? 04 (Toon) -->
+            <!-- 展示卡片 04 (Toon) -->
             <div class="showcase-card" data-material-key="TOON" style="--card-accent: #ffe600; --card-accent-glow: rgba(255, 230, 0, 0.25);">
                 <div class="card-preview" data-material="TOON"></div>
                 <div class="card-status-line">
@@ -1214,7 +1214,7 @@ CHANGE LOG & VERSION HISTORY
                     <div class="card-name">TOON_SIM.glb</div>
                 </div>
             </div>
-            <!-- 撅內?∠? 05 (Wood) -->
+            <!-- 展示卡片 05 (Wood) -->
             <div class="showcase-card" data-material-key="WOOD" style="--card-accent: #8bf370; --card-accent-glow: rgba(139, 243, 112, 0.25);">
                 <div class="card-preview" data-material="WOOD"></div>
                 <div class="card-status-line">
@@ -1226,7 +1226,7 @@ CHANGE LOG & VERSION HISTORY
                     <div class="card-name">WOOD_SIM.glb</div>
                 </div>
             </div>
-            <!-- 撅內?∠? 06 (Rock/Moss) -->
+            <!-- 展示卡片 06 (Rock/Moss) -->
             <div class="showcase-card" data-material-key="ROCK_MOSS" style="--card-accent: #8b9a46; --card-accent-glow: rgba(139, 154, 70, 0.25);">
                 <div class="card-preview" data-material="ROCK_MOSS"></div>
                 <div class="card-status-line">
@@ -1241,7 +1241,7 @@ CHANGE LOG & VERSION HISTORY
         </div>
     </div>
 
-    <!-- 撘 Three.js -->
+    <!-- 引入 Three.js -->
     <script type="importmap">
         {
             "imports": {
@@ -1261,7 +1261,7 @@ CHANGE LOG & VERSION HISTORY
         import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-        // ?踵?????RGBShiftShader嚗?典恥鋆賢???Cyberpunk 2077 憸冽 Glitch Shader
+        // 替換原先的 RGBShiftShader，改用客製化的 Cyberpunk 2077 風格 Glitch Shader
         const CyberGlitchShader = {
             uniforms: {
                 'tDiffuse': { value: null },
@@ -1289,15 +1289,15 @@ CHANGE LOG & VERSION HISTORY
                     vec2 p = vUv;
                     
                     if (amount > 0.0) {
-                        // 1. ?憛?瘞游像?? (Blocky Horizontal Tearing)
+                        // 1. 區塊化水平撕裂 (Blocky Horizontal Tearing)
                         float stripHeight = 30.0;
                         float strip = step(0.9, rand(vec2(floor(p.y * stripHeight), floor(time * 15.0))));
                         
-                        // ?冽??椰???單?鋆?
+                        // 隨機向左或向右撕裂
                         float tearOffset = (rand(vec2(floor(time * 15.0), 1.0)) - 0.5) * 0.15 * amount;
                         p.x += tearOffset * strip;
                         
-                        // 2. 鞈賢?樴???RGB ?脣? (Cyberpunk RGB Shift)
+                        // 2. 賽博龐克感 RGB 色偏 (Cyberpunk RGB Shift)
                         float shift = 0.02 * amount + strip * 0.06 * amount;
                         vec4 cr = texture2D(tDiffuse, p + vec2(shift, 0.0));
                         vec4 cga = texture2D(tDiffuse, p);
@@ -1305,15 +1305,15 @@ CHANGE LOG & VERSION HISTORY
                         
                         vec4 glitchColor = vec4(cr.r, cga.g, cb.b, cga.a);
                         
-                        // 3. ??蝺??? (Scanlines & Noise)
+                        // 3. 掃描線與雜訊 (Scanlines & Noise)
                         float scanline = sin(vUv.y * 800.0 + time * 20.0) * 0.04 * amount;
                         float staticNoise = (rand(p + time) - 0.5) * 0.1 * amount;
                         glitchColor.rgb -= scanline;
                         glitchColor.rgb += staticNoise;
                         
-                        // 4. ???毽??(瞈暸??
+                        // 4. 與原圖混合 (濾鏡感)
                         vec4 baseColor = texture2D(tDiffuse, vUv);
-                        float mixRatio = clamp(amount * 4.0, 0.0, 0.7); // ?擃???30% ??
+                        float mixRatio = clamp(amount * 4.0, 0.0, 0.7); // 最高保留 30% 原圖
                         
                         gl_FragColor = mix(baseColor, glitchColor, mixRatio);
                     } else {
@@ -1324,26 +1324,26 @@ CHANGE LOG & VERSION HISTORY
         };
         import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
         
-        let shadowLight; // ??雿?誑靘??怠???
-        const shadowMaterials = []; // ?冽摮??蔣摮?鞈迎?隞乩噶??瘛∪瘛∪
+        let shadowLight; // 提升作用域以供動畫存取
+        const shadowMaterials = []; // 用於存放所有影子材質，以便動態淡入淡出
         let shadowMultiplier = 1.0;
         let targetShadowMultiplier = 1.0;
 
-        const previewMeshes = []; // 摮撅內?∠???3D ?汗蝬脫
+        const previewMeshes = []; // 存放展示卡片的 3D 預覽網格
         
-        // ??頛?PBR 鞎澆?蝟餌絞
+        // 預加載 PBR 貼圖系統
         const loadedTextures = {};
 
-        // 3D ?餌?蝵抵??渡????
+        // 3D 玻璃罩轉場特效變數
         let glassCoverGroup = null;
         let transitionProgress = 0.0;
         let isMaterialTransitioning = false;
         let currentCoverY = 12.0;
         let targetCoverY = 12.0;
         let isCardTransitioning = false;
-        let glassCoverMaterial = null; // ?典??餌?蝵拇?鞈芸??改?靘??湔???霈?拍??寞?
+        let glassCoverMaterial = null; // 全域玻璃罩材質參照，供轉場時動態變革物理特性
 
-        // 1. ?????
+        // 1. 初始化場景
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
@@ -1355,13 +1355,13 @@ CHANGE LOG & VERSION HISTORY
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.0;
         
-        // ???啣蔣??
+        // 開啟陰影映射
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         
         container.appendChild(renderer.domElement);
 
-        // --- Post-Processing (?刻撟?RGB ?) ---
+        // --- Post-Processing (全螢幕 RGB 分離) ---
         const composer = new EffectComposer(renderer);
         composer.setSize(container.clientWidth, container.clientHeight);
         const renderPass = new RenderPass(scene, camera);
@@ -1375,13 +1375,13 @@ CHANGE LOG & VERSION HISTORY
         const outputPass = new OutputPass();
         composer.addPass(outputPass);
 
-        // ?函??? LOGO ?摩
+        // 獨立旋轉 LOGO 邏輯
         let isDragging = false;
         let previousMousePosition = { x: 0, y: 0 };
         let dragVelocity = new THREE.Vector2(0, 0);
         const mouse = new THREE.Vector2(0, 0);
         
-        // ?????賊?頛?(??glass_test.html)
+        // 旋轉四元數邏輯 (參考 glass_test.html)
         const targetQuat = new THREE.Quaternion();
         const identityQuat = new THREE.Quaternion();
         const targetHoverQuat = new THREE.Quaternion();
@@ -1390,11 +1390,11 @@ CHANGE LOG & VERSION HISTORY
         container.addEventListener('mousedown', (e) => {
             isDragging = true;
             previousMousePosition = { x: e.clientX, y: e.clientY };
-            dragVelocity.set(0, 0); // ????甇Ｘ??
+            dragVelocity.set(0, 0); // 抓取時停止慣性
         });
         window.addEventListener('mouseup', () => { isDragging = false; });
         window.addEventListener('mousemove', (e) => {
-            // 璅???曌漣璅?(-1 ~ 1) ?冽?詨???
+            // 標準化滑鼠座標 (-1 ~ 1) 用於懸停效果
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
@@ -1407,7 +1407,7 @@ CHANGE LOG & VERSION HISTORY
             }
         });
 
-        // 2. ???憓?
+        // 2. 燈光與環境
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(ambientLight);
 
@@ -1423,8 +1423,8 @@ CHANGE LOG & VERSION HISTORY
         dirLight.shadow.mapSize.height = 2048;
         scene.add(dirLight);
 
-        // 撱箇????敶望?嗅??(???像?Ｙ宏?歹?撠 3D 摨漣?誨)
-        // 雿鈭誑?脰銝嚗???銝血?銝宏?踹?蝛踹鼠
+        // 建立透明的陰影接收地板 (原生的平面移除，將由 3D 底座取代)
+        // 但為了以防萬一，先留著並向下移避免穿幫
         const floorGeometry = new THREE.PlaneGeometry(100, 100);
         const floorMaterial = new THREE.ShadowMaterial({ opacity: 0.1 });
         shadowMaterials.push({ material: floorMaterial, baseOpacity: 0.1 });
@@ -1434,11 +1434,11 @@ CHANGE LOG & VERSION HISTORY
         floor.receiveShadow = true;
         scene.add(floor);
 
-        // Tweakpane UI ????
+        // Tweakpane UI 參數與整合
         const params = {
             color: '#ffffff',
             effectColor: '#00d0ff',
-            transmission: 1.0, // 敹???1.0
+            transmission: 1.0, // 必須為 1.0
             ior: 1.5,
             thickness: 3.0,
             roughness: 0.05,
@@ -1490,14 +1490,14 @@ CHANGE LOG & VERSION HISTORY
 
         const paneContainer = document.getElementById('material-ui-container');
         
-        // --- ?踵?????Tweakpane嚗?箄摰儔 UI 蝬??摩 ---
+        // --- 替換原先的 Tweakpane，改為自定義 UI 綁定邏輯 ---
         const uiControls = ['color', 'transmission', 'ior', 'thickness', 'roughness', 'metalness', 'envMapIntensity'];
         
         function updateCustomUIValues() {
             uiControls.forEach(key => {
                 const el = document.getElementById('ctrl-' + key);
                 const valEl = document.getElementById('ctrl-' + key + '-val');
-                const textEl = document.getElementById('ctrl-' + key + '-text'); // ?? color ??摮?
+                const textEl = document.getElementById('ctrl-' + key + '-text'); // 針對 color 的文字
                 if (el) {
                     el.value = params[key];
                 }
@@ -1506,7 +1506,7 @@ CHANGE LOG & VERSION HISTORY
                 }
                 if (textEl && key === 'color') {
                     textEl.innerText = params[key];
-                    // ?郊?▼憿 CSS 霈嚗??Ｚ??乓reset ?????郊嚗?
+                    // 同步拉桿顏色 CSS 變數（頁面載入、preset 切換時也同步）
                     document.documentElement.style.setProperty('--user-color', params[key]);
                 }
             });
@@ -1524,7 +1524,7 @@ CHANGE LOG & VERSION HISTORY
                 const textEl = document.getElementById('ctrl-' + key + '-text');
                 if (textEl && key === 'color') {
                     textEl.innerText = params[key];
-                    // ?郊?湔?▼憿 CSS 霈
+                    // 同步更新拉桿顏色 CSS 變數
                     document.documentElement.style.setProperty('--user-color', params[key]);
                 }
                 if (typeof applyCurrentParamsToModel === 'function') {
@@ -1540,7 +1540,7 @@ CHANGE LOG & VERSION HISTORY
             }
         });
         
-        // Toggle ?Ｘ憿舐內/?梯? (?喳撠?閫耦 UI)
+        // Toggle 面板顯示/隱藏 (右側小三角形 UI)
         const toggleBtn = document.getElementById('ctrl-toggle-btn');
         let isPanelOpen = true;
         if (toggleBtn && paneContainer) {
@@ -1551,7 +1551,7 @@ CHANGE LOG & VERSION HISTORY
             });
         }
 
-        // Reset ???摩 (?身?詨潛?嗅? preset)
+        // Reset 按鈕邏輯 (重設數值為當前 preset)
         const resetBtn = document.getElementById('ctrl-reset-btn');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => {
@@ -1573,18 +1573,18 @@ CHANGE LOG & VERSION HISTORY
             });
         }
 
-        // 靘蝙?刻?瘙???Calibration ?Ｘ (OffsetZ 撌脤?閮?0.05)
-        // 撱箇? Toon ????Gradient Texture
+        // 依使用者要求關閉 Calibration 面板 (OffsetZ 已預設 0.05)
+        // 建立 Toon 所需的 Gradient Texture
         const format = ( renderer.capabilities.isWebGL2 ) ? THREE.RedFormat : THREE.LuminanceFormat;
-        const colors = new Uint8Array( [0, 128, 255] ); // 蝪∪???敶?
+        const colors = new Uint8Array( [0, 128, 255] ); // 簡單的三階陰影
         const gradientMap = new THREE.DataTexture( colors, colors.length, 1, format );
         gradientMap.needsUpdate = true;
         gradientMap.minFilter = THREE.NearestFilter;
         gradientMap.magFilter = THREE.NearestFilter;
         gradientMap.generateMipmaps = false;
 
-        // --- ??皞嗉圾頧?寞? (Noise Dissolve Transition) ---
-        // --- 3D 頧?寞? Uniform 霈???脣瘜典蝟餌絞 ---
+        // --- 雜訊溶解轉場特效 (Noise Dissolve Transition) ---
+        // --- 3D 轉場特殊 Uniform 變數與著色器注入系統 ---
         const sharedDissolve = { value: 0.0 };
         const sharedDistortion = { value: 0.0 };
         const sharedHoloTransition = { value: -2.0 };
@@ -1604,7 +1604,7 @@ CHANGE LOG & VERSION HISTORY
             shader.uniforms.uTime = sharedTime;
             shader.uniforms.uDissolveColor = sharedDissolveColor;
             
-            // ????冽釣??
+            // 頂點著色器注入
             shader.vertexShader = shader.vertexShader.replace(
                 '#include <common>',
                 `
@@ -1639,32 +1639,32 @@ CHANGE LOG & VERSION HISTORY
                 #include <begin_vertex>
                 vPositionDissolve = position;
                 
-                // ?寞? A ??: Holographic Radial Dissolve (?典?頛餃?蝎?瘨?)
+                // 方案 A 升級: Holographic Radial Dissolve (全像輻射粒子消融)
                 if (uTransitionPreset == 0.0 && uDissolve > 0.0) {
                     float dist = length(position);
                     float radialThreshold = uDissolve * 4.0;
                     float noiseVal = noise(position * 3.0);
                     float edge = dist + noiseVal * 0.5;
                     
-                    // Holographic Glitch ???? (?瘨??楠?潛?)
+                    // Holographic Glitch 故障效果 (僅在消融邊緣發生)
                     float distToEdge = abs(edge - radialThreshold);
                     if (distToEdge < 0.4) {
                         float glitch = step(0.7, fract(sin(uTime * 50.0 + position.y * 15.0) * 43758.5453)) * 0.08 * (1.0 - distToEdge / 0.4);
                         transformed.x += glitch;
                         transformed.z += glitch * 0.5;
                         
-                        // ?楠頛凝??對???賡?????
+                        // 邊緣輕微的膨脹，呈現能量過載感
                         transformed += normal * (0.05 * (1.0 - distToEdge / 0.4));
                     }
                     
-                    // 靽??敺桀摹?郭??
+                    // 保留原本微弱的波動感
                     float waveX = sin(position.y * 6.0 + uTime * 5.0) * 0.05 * uDistortion;
                     transformed.x += waveX;
                 }
                 
-                // ?寞? C (HOLO) ?冽敺桀摹??
+                // 方案 C (HOLO) 全息微弱抖動
                 if (uTransitionPreset == 2.0) {
-                    // ???蝺?餈????Ｙ??冽??雿?????
+                    // 僅在掃描線附近的頂點產生隨機的數位故障抖動
                     float distToScan = abs(position.y - uHoloTransition);
                     if (distToScan < 0.25) {
                         float glitch = step(0.85, sin(uTime * 40.0 + position.y * 20.0)) * 0.04 * (1.0 - distToScan / 0.25);
@@ -1675,7 +1675,7 @@ CHANGE LOG & VERSION HISTORY
                 `
             );
 
-            // ????冽釣??
+            // 片元著色器注入
             shader.fragmentShader = shader.fragmentShader.replace(
                 '#include <common>',
                 `
@@ -1710,12 +1710,12 @@ CHANGE LOG & VERSION HISTORY
                 `
                 #include <dithering_fragment>
                 
-                // ?寞? A ??: Procedural Radial Noise 瘨?????蝺?
+                // 方案 A 升級: Procedural Radial Noise 消融與高光邊緣
                 if (uTransitionPreset == 0.0 && uDissolve > 0.0) {
                     float dist = length(vPositionDissolve);
-                    float radialThreshold = uDissolve * 2.5; // 蝮桀?璆菟??游撐??嚗??摨行?憭梢??趙
+                    float radialThreshold = uDissolve * 2.5; // 縮小極限擴張半徑，避免過度消失造成停滯
                     
-                    // ?寞?瘨??脣漲蝮桀???????摨佗??踹??冽撠暹?銝剖?畾?頝喳???閮?
+                    // 根據消融進度縮小雜訊與光暈厚度，避免在收尾時中心殘留跳動的雜訊點
                     float fadeOut = smoothstep(0.0, 0.15, uDissolve);
                     float noiseVal = noise(vPositionDissolve * 3.0) * fadeOut;
                     float edge = dist + noiseVal * 0.5;
@@ -1724,46 +1724,46 @@ CHANGE LOG & VERSION HISTORY
                     if (edge < radialThreshold) {
                         discard;
                     } else if (edge < radialThreshold + glowThickness) {
-                        // ?楠?澆?嚗?冽?鞈芸摨????擃?
-                        float t = (radialThreshold + glowThickness - edge) / glowThickness; // 0 ??1
+                        // 邊緣發光：採用材質基底色動態生成高光
+                        float t = (radialThreshold + glowThickness - edge) / glowThickness; // 0 到 1
                         
-                        // ?撘瑞???RGB Separate ??Glitch ??
-                        // ?? step ?瑼餉????Ｙ??游之 (0.7 隞?” 30% 璈?)
+                        // 加入強烈的 RGB Separate 與 Glitch 效果
+                        // 降低 step 門檻讓雜訊面積更大 (0.7 代表 30% 機率)
                         float glitchShift = step(0.7, fract(sin(uTime * 50.0 + vPositionDissolve.y * 20.0) * 43758.5453));
                         
-                        // 銝??漲甇餌嚗??憭??祈敶抬??賢?瘥??寧 0.5
+                        // 不要過度死白，保留更多原本色彩，白化比例改為 0.5
                         vec3 hotColor = mix(uDissolveColor, vec3(1.0), 0.5);
                         
                         if (glitchShift > 0.0) {
-                            // 鞈賢?樴???RGB ?臭?嚗誑??箏蝷??脰?撘瑞?撠??
+                            // 賽博龐克感 RGB 錯位：以原色為基礎，進行強烈對比分離
                             hotColor = vec3(uDissolveColor.r * 2.5, uDissolveColor.g * 0.2, uDissolveColor.b * 2.0 + 0.5);
                         }
 
                         vec4 glowColor = vec4(mix(uDissolveColor, hotColor, t), 1.0);
                         gl_FragColor = mix(gl_FragColor, glowColor, t * 0.95);
                         
-                        // 璆菟??楠?詨??澆? (???擃?嚗?甇餌)
+                        // 極限邊緣核心發光 (疊加染色高光，而非死白)
                         if (t > 0.8) {
                             gl_FragColor.rgb += hotColor * 0.6;
                         }
                     }
                 }
                 
-                // ?寞? B (METAL) ?????皞怨?澆? (Forge Emission Glow) ???
+                // 方案 B (METAL) 鍛造敲擊時的高溫自發光 (Forge Emission Glow) 與冷卻
                 if (uTransitionPreset == 1.0 && uDistortion > 0.0) {
-                    // ?芰???撥摨行迤瘥???賡?嚗蒂隞仿?憌賢?鈭格??脣???
+                    // 自發光疊加強度正比於撞擊能量，並以高飽和亮橙色呈現
                     float glowIntensity = uDistortion * 2.0;
                     gl_FragColor.rgb += vec3(1.0, 0.35, 0.0) * glowIntensity;
                 }
                 
-                // ?寞? C (HOLO) ?冽瘨??雿???
+                // 方案 C (HOLO) 全息消融與數位掃描線
                 if (uTransitionPreset == 2.0) {
-                    // Y 頠豢???(?曹?敺銝?憭梧?uHoloTransition 蝭???-2.0 ??2.0)
+                    // Y 軸消融 (由下往上消失，uHoloTransition 範圍為 -2.0 到 2.0)
                     if (vPositionDissolve.y < uHoloTransition) {
                         discard;
                     }
                     
-                    // 瘨??楠鈭株??脩??
+                    // 消融邊緣亮藍色發光線
                     float edgeWidth = 0.15;
                     if (vPositionDissolve.y < uHoloTransition + edgeWidth) {
                         float t = (uHoloTransition + edgeWidth - vPositionDissolve.y) / edgeWidth;
@@ -1771,7 +1771,7 @@ CHANGE LOG & VERSION HISTORY
                         gl_FragColor = mix(gl_FragColor, holoColor, (1.0 - t) * 0.95);
                     }
                     
-                    // ?冽?訾???蝺?
+                    // 全息數位掃描線
                     float scanline = sin(vPositionDissolve.y * 25.0 - uTime * 15.0) * 0.5 + 0.5;
                     gl_FragColor += vec4(0.0, 0.45, 0.7, 0.0) * scanline * 0.35;
                 }
@@ -1788,23 +1788,23 @@ CHANGE LOG & VERSION HISTORY
                 const isToonNow  = child.material && child.material.isMeshToonMaterial;
                 const isPhysNow  = child.material && child.material.isMeshPhysicalMaterial;
 
-                // ?斗?臬??鈭?Preset嚗??嚗??閬?撱箸?鞈芯誑蝣箔? Shader 撌券? (Macro) 蝺刻陌甇?Ⅱ
+                // 判斷是否切換了 Preset，如果是，則需要重建材質以確保 Shader 巨集 (Macro) 編譯正確
                 const currentPresetKey = currentTransitionPresetKey || 'CUSTOM';
                 const hasPresetChanged = !child.material || child.material.userData.presetKey !== currentPresetKey;
 
-                // ???萎耨敺押??菜葫鞎澆??臬撌脤??郊?唬?雿?鞈芸??芸??怨票???交?撥?園?撱?
-                // ?蝣箔? Three.js WebGL Shader Macro (USE_MAP 蝑? ?賣迤蝣箇楊霅舐??臭??寞?
+                // 【關鍵修復】：偵測貼圖是否已非同步到位但材質尚未包含貼圖，若是則強制重建
+                // 這是確保 Three.js WebGL Shader Macro (USE_MAP 等) 能正確編譯的唯一方法
                 const presetDef = materialPresets[currentPresetKey] || materialPresets['WATER'];
                 const hasPBR = presetDef.pbr !== undefined;
                 const tex = loadedTextures[currentPresetKey];
                 const hasTexData = tex && tex.map;
                 const hasTextureNow = !!(child.material && child.material.map);
-                // ?交?鞈芣??票??hasPBR && hasTexData嚗??桀??釭瘝?鞎澆?嚗?撘瑕?遣
+                // 若材質應有貼圖（hasPBR && hasTexData）但目前材質沒有貼圖，需強制重建
                 const mustRebuildForTex = hasPBR && hasTexData && !hasTextureNow;
                 const mustRebuild = hasPresetChanged || mustRebuildForTex;
 
                 if (needToon && (!isToonNow || mustRebuild)) {
-                    // Physical ??Toon ??Preset ?寡????遣
+                    // Physical → Toon 或 Preset 改變時：重建
                     if (child.material) child.material.dispose();
                     const mat = new THREE.MeshToonMaterial({ gradientMap });
                     mat.onBeforeCompile = injectTransitionShaders;
@@ -1813,7 +1813,7 @@ CHANGE LOG & VERSION HISTORY
                     child.material = mat;
 
                 } else if (!needToon && (!isPhysNow || mustRebuild)) {
-                    // Toon ??Physical ??Preset ?寡????票???唬???遣嚗Ⅱ靽?Macro 蝺刻陌甇?Ⅱ
+                    // Toon → Physical 或 Preset 改變時，或貼圖剛到位需重建：確保 Macro 編譯正確
                     if (child.material) child.material.dispose();
                     
                     const matParams = {
@@ -1823,7 +1823,7 @@ CHANGE LOG & VERSION HISTORY
                         side: THREE.DoubleSide
                     };
                     
-                    // ??constructor 鋆∠?交?亥票??蝣箔? Shader Macro ?函楊霅舀?撌脣???
+                    // 在 constructor 裡直接放入貼圖，確保 Shader Macro 在編譯時已啟用
                     if (hasPBR && hasTexData) {
                         matParams.map = tex.map;
                         matParams.roughnessMap = tex.roughnessMap || null;
@@ -1842,9 +1842,9 @@ CHANGE LOG & VERSION HISTORY
                     child.material = mat;
 
                 }
-                // else: ?? Preset 銝窒?冽?鞈迎??芣?啣惇??
+                // else: 同一 Preset 下沿用材質，只更新屬性
 
-                // 憟撅祆?
+                // 套用屬性
                 if (params.isToon) {
                     child.material.color.set(params.color);
                     child.material.wireframe = params.wireframe;
@@ -1867,9 +1867,9 @@ CHANGE LOG & VERSION HISTORY
                     m.emissiveIntensity   = 0;
                     m.wireframe           = params.wireframe;
                     
-                    // PBR ?釭嚗Ⅱ靽惇?扯??迤蝣綽?鞎澆??券?撱箸?撌脰身憟踝?甇方?銋??郊?湔??票??reference嚗?
+                    // PBR 材質：確保屬性覆蓋正確（貼圖在重建時已設好，此處也要同步更新所有貼圖 reference）
                     if (hasPBR && hasTexData) {
-                        // ?敹耨敺押???銝票??reference嚗圾瘙粹??郊?唬?敺?roughness/normal 銝???憿?
+                        // 【核心修復】動態補上貼圖 reference，解決非同步到位後 roughness/normal 不生效問題
                         if (tex.map && m.map !== tex.map) {
                             m.map = tex.map;
                             m.needsUpdate = true;
@@ -1893,7 +1893,7 @@ CHANGE LOG & VERSION HISTORY
                         m.clearcoat = presetDef.clearcoat !== undefined ? presetDef.clearcoat : 1.0;
                         m.clearcoatRoughness = presetDef.clearcoatRoughness !== undefined ? presetDef.clearcoatRoughness : 0.1;
                     } else if (!hasPBR) {
-                        // ??PBR ?釭嚗Ⅱ靽?蝛箸??票??
+                        // 非 PBR 材質，確保清空殘留貼圖
                         m.map = null;
                         m.roughnessMap = null;
                         m.normalMap = null;
@@ -1904,25 +1904,25 @@ CHANGE LOG & VERSION HISTORY
             updateCustomUIValues();
         }
 
-        // 蝎?蝟餌絞摰??
+        // 粒子系統宣告
         let dissolveParticles;
         let particlePositions, particleVelocities;
         const particleCount = 1000;
 
-        // --- 3D 頧?寞?????---
+        // --- 3D 轉場特效初始化 ---
         function initTransitionEffects() {
-            // ?餌?蝵?(靽?蝯?隞亦雁???湧脣漲閮?嚗?閮剔 invisible 銝???湔)
+            // 玻璃罩 (保留結構以維持轉場進度計算，但設為 invisible 且不加入場景)
             glassCoverGroup = new THREE.Group();
             glassCoverGroup.visible = false;
-            // 銝??scene.add(glassCoverGroup)嚗?蔗撌脣??函宏??
+            // 不呼叫 scene.add(glassCoverGroup)，玻璃罩已完全移除
             
-            // ?啣?嚗???典?頛餃?瘨?蝎?蝟餌絞 (Holographic Particles)
+            // 新增：高教能全像輻射消融粒子系統 (Holographic Particles)
             const pGeo = new THREE.BufferGeometry();
             particlePositions = new Float32Array(particleCount * 3);
             particleVelocities = new Float32Array(particleCount * 3);
             
             for (let i = 0; i < particleCount; i++) {
-                particlePositions[i*3] = 9999; // ???梯?
+                particlePositions[i*3] = 9999; // 初始隱藏
             }
             pGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
             
@@ -1938,7 +1938,7 @@ CHANGE LOG & VERSION HISTORY
             scene.add(dissolveParticles);
         }
 
-        // --- ????蝷箏??函?敺桀? 3D ?釭?汗撟曆?擃?(Tiny Three.js inside cards) ---
+        // --- 初始化展示卡片內部的微型 3D 材質預覽幾何體 (Tiny Three.js inside cards) ---
         function initCardPreviews() {
             const previewContainers = document.querySelectorAll('.card-preview');
             previewContainers.forEach(container => {
@@ -1960,7 +1960,7 @@ CHANGE LOG & VERSION HISTORY
                 pRenderer.toneMappingExposure = 1.0;
                 container.appendChild(pRenderer.domElement);
 
-                // ???憓?
+                // 燈光與環境
                 const pAmbient = new THREE.AmbientLight(0xffffff, 0.5);
                 pScene.add(pAmbient);
                 const pDir = new THREE.DirectionalLight(0xffffff, 1.5);
@@ -1971,7 +1971,7 @@ CHANGE LOG & VERSION HISTORY
                     pScene.environment = hdriTexture;
                 }
 
-                // 敺桀?撟曆?擃?雿輻??甇?擃?(RoundedBoxGeometry) 撅內?詨??釭?孵?
+                // 微型幾何體：使用圓角正方體 (RoundedBoxGeometry) 展示核心材質方塊
                 const pGeo = new RoundedBoxGeometry(0.55, 0.55, 0.55, 6, 0.08);
                 
                 let pMat;
@@ -1985,10 +1985,10 @@ CHANGE LOG & VERSION HISTORY
                         color: preset.color,
                         transmission: preset.transmission,
                         ior: preset.ior,
-                        thickness: preset.thickness * 0.12, // 蝮格??漲瘥???敺桀??怠?瘥?
+                        thickness: preset.thickness * 0.12, // 縮減厚度比，配合微型畫布比例
                         roughness: preset.roughness,
                         metalness: preset.metalness,
-                        envMapIntensity: preset.envMapIntensity * 1.5, // 蝔凝????鈭桀漲
+                        envMapIntensity: preset.envMapIntensity * 1.5, // 稍微拉高反射亮度
                         iridescence: preset.iridescence,
                         iridescenceIOR: preset.iridescenceIOR,
                         attenuationColor: preset.attenuationColor,
@@ -2004,7 +2004,7 @@ CHANGE LOG & VERSION HISTORY
                 pScene.add(pMesh);
                 previewMeshes.push({ mesh: pMesh, key: materialKey });
 
-                // ?芯蜓雿?頧???
+                // 自主低速旋轉動畫
                 function pAnimate() {
                     requestAnimationFrame(pAnimate);
                     pMesh.rotation.x += 0.005;
@@ -2013,7 +2013,7 @@ CHANGE LOG & VERSION HISTORY
                 }
                 pAnimate();
 
-                // ?舀 Resize ?芷?葬??
+                // 支援 Resize 自適應縮放
                 window.addEventListener('resize', () => {
                     const nw = container.clientWidth;
                     const nh = container.clientHeight;
@@ -2025,20 +2025,20 @@ CHANGE LOG & VERSION HISTORY
             updatePreviewMaterials();
         }
 
-        // 3. 頛璅∪??憓票??
+        // 3. 載入模型與環境貼圖
         let mainModel;
         const loader = new GLTFLoader();
-        // ??嚗?潛汗??CORS ?嚗????砍隡箸??剁?憒?Live Server嚗??迨 HTML嚗?芋??鞎澆?撠瘜??乓?
+        // 重要：由於瀏覽器 CORS 限制，必須透過本地伺服器（如 Live Server）開啟此 HTML，否則模型與貼圖將無法載入。
 
-        // 撱箇????皜??(Eraser Mesh)
-        // 雿輻?蝎暹???撟喲??Three.js ??????冽?蝯撣?皜?嚗?????HTML ???賢?蝢
+        // 建立透明背景清除器 (Eraser Mesh)
+        // 使玻璃可精準折射平面的 Three.js 背景圖，同時在最終畫布上清除背景，讓背後的 HTML 元素能完美透出
         const eraserGeo = new THREE.BufferGeometry();
         eraserGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0]), 3));
         const eraserMat = new THREE.ShaderMaterial({
             vertexShader: `void main() { gl_Position = vec4(position.xy, 1.0, 1.0); }`,
             fragmentShader: `void main() { gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0); }`,
             depthTest: true,
-            depthFunc: THREE.EqualDepth, // ??方??舀楛摨衣???
+            depthFunc: THREE.EqualDepth, // 僅擦除背景深度的像素
             depthWrite: false,
             transparent: true,
             blending: THREE.NoBlending,
@@ -2059,7 +2059,7 @@ CHANGE LOG & VERSION HISTORY
                 const hasTexData = tex && tex.map;
 
                 if (hasPBR && hasTexData) {
-                    // ?亙??芣?瘣曇票???遣?釭隞亦Ⅱ靽?Shader 撌券? (Macro) 甇?Ⅱ蝺刻陌嚗＊?曉?貉?蝎?蝝啁?
+                    // 若尚未指派貼圖，重建材質以確保 Shader 巨集 (Macro) 正確編譯，顯現凹凸與粗糙細節
                     if (!mesh.material.map) {
                         const oldMat = mesh.material;
                         const mat = new THREE.MeshPhysicalMaterial({
@@ -2166,13 +2166,13 @@ CHANGE LOG & VERSION HISTORY
             const isPBR = currentTransitionPresetKey === 'WOOD' || currentTransitionPresetKey === 'ROCK_MOSS';
             
             if (isPBR && pbrHdriTexture) {
-                // PBR 撠惇 HDRI (forest)
+                // PBR 專屬 HDRI (forest)
                 scene.environment = pbrHdriTexture;
             } else if (!isPBR && hdriTexture) {
-                // ?嗡??釭???HDRI (monochrome)
+                // 其他材質原本的 HDRI (monochrome)
                 scene.environment = hdriTexture;
             } else {
-                // Fallback ?脣?
+                // Fallback 防呆
                 const isDark = document.body.getAttribute('data-theme') === 'dark';
                 scene.environment = isDark ? (darkBgEnv || null) : (lightBgEnv || null);
             }
@@ -2203,31 +2203,31 @@ CHANGE LOG & VERSION HISTORY
             lightBgEnv.mapping = THREE.EquirectangularReflectionMapping;
             updateBackgroundCover();
             if(document.body.getAttribute('data-theme') === 'light') {
-                scene.background = null; // Light mode 霈?WebGL ???嚗 CSS #bg-image-layer 鞎痊???
+                scene.background = null; // Light mode 讓 WebGL 背景透明，由 CSS #bg-image-layer 負責背景圖
                 updateEnvironmentMap();
             }
         });
 
-        // 頛???HDRI (monochrome) ????PBR ?釭?啣???
+        // 載入原本的 HDRI (monochrome) 提供非 PBR 材質環境反射
         const rgbeLoader = new RGBELoader();
         rgbeLoader.load('./3D_reference/monochrome_studio_01_4k.hdr', (tex) => {
             tex.mapping = THREE.EquirectangularReflectionMapping;
             hdriTexture = tex;
             updateEnvironmentMap();
             
-            // 銝餃???頛??游蔣???脫迫??????亙辣?脰???
+            // 主動預加載轉場影片，防止切換時產生載入延遲與閃爍
             const vB2W = document.getElementById('vid-bg-b2w');
             const vW2B = document.getElementById('vid-bg-w2b');
             if (vB2W) vB2W.load();
             if (vW2B) vW2B.load();
 
-            // ?????鞈芷?閬質? 3D 頧?寞?
+            // 初始化卡片材質預覽與 3D 轉場特效
             initTransitionEffects();
             initCardPreviews();
             loadPBRTextures();
         });
 
-        // 頛 PBR 撠??EXR (forest.exr)
+        // 載入 PBR 專用的 EXR (forest.exr)
         exrLoader.load('./3D_reference/forest.exr', (tex) => {
             tex.mapping = THREE.EquirectangularReflectionMapping;
             pbrHdriTexture = tex;
@@ -2240,17 +2240,17 @@ CHANGE LOG & VERSION HISTORY
             loader.load(url, (gltf) => {
                 if (currentImportedScene) {
                     scene.remove(currentImportedScene);
-                    // ?交??閬??臭誑?脰?瘛勗漲 dispose 皜?嚗ㄐ蝪∪???
+                    // 若有需要，可以進行深度 dispose 清理，這裡簡化處理
                 }
                 
                 currentImportedScene = gltf.scene;
                 scene.add(currentImportedScene); 
                 
-                // ?脣??游?舐???雿宏?葬?曉皞?靘?Calibration ?宏?擃葬?曆蝙??
+                // 儲存整個場景的原始位移與縮放基準，供 Calibration 偏移與整體縮放使用
                 currentImportedScene.userData.originPosition = currentImportedScene.position.clone();
                 currentImportedScene.userData.originScale = currentImportedScene.scale.x || 1.0;
                 
-                // 1. ???豢? (??閮剖?航???
+                // 1. 處理相機 (僅預設場景處理)
                 if (!isCustom) {
                     let importedCamera = null;
                     currentImportedScene.traverse((child) => {
@@ -2265,49 +2265,49 @@ CHANGE LOG & VERSION HISTORY
                     }
                 }
 
-                // 2. ?拐辣?釭??頛航???
+                // 2. 物件材質與邏輯處理
                 let foundMain = false;
                 currentImportedScene.traverse(child => {
                     if (child.isMesh) {
-                        // 撘瑕閮?撟曆?擃????? (Tangent)
-                        // ? Normal Map ?賢?甇?Ⅱ撠?銝衣??擃敶梁??
-                        // ?喃蝙??GLB ?扳? Tangent嚗撥?嗡漱??Three.js ?寞? UV ???舫?迂憭摰寞批?憿?
+                        // 強制計算幾何體的切線向量 (Tangent)
+                        // 這是 Normal Map 能夠正確對位並產生立體陰影的關鍵
+                        // 即使原 GLB 內有 Tangent，強制交由 Three.js 根據 UV 重算可避免許多相容性問題
                         if (child.geometry && child.geometry.hasAttribute('uv')) {
                             child.geometry.computeTangents();
                         }
 
-                        // 撠銝餅芋???身?箏?蝔?LOGO ?隞塚??芾?璅∪???蝚砌???Mesh
+                        // 尋找主模型：預設為名稱 LOGO 的物件，自訂模型則取第一個 Mesh
                         if ((!isCustom && child.name === 'LOGO') || (isCustom && !foundMain)) {
                             mainModel = child;
                             foundMain = true;
                             
-                            // ??釭?
+                            // 應用材質參數
                             applyCurrentParamsToModel();
                             
                             mainModel.castShadow = true;
                             mainModel.receiveShadow = true;
                             
                             if (isCustom) {
-                                // 撠閮芋?蔭銝凋蒂隤踵憭批?
+                                // 將自訂模型置中並調整大小
                                 const box = new THREE.Box3().setFromObject(mainModel);
                                 const center = box.getCenter(new THREE.Vector3());
                                 const size = box.getSize(new THREE.Vector3());
                                 const maxDim = Math.max(size.x, Math.max(size.y, size.z));
-                                const scale = 8 / maxDim; // 蝮格?喲?之撠?
+                                const scale = 8 / maxDim; // 縮放至適合大小
                                 mainModel.scale.setScalar(scale);
                                 mainModel.position.sub(center.multiplyScalar(scale));
                             }
                             
-                            // ???萎耨敺押??脣?頛/?芷??蝞??Ｗ???憪?Position?cale ??Y 頠詨皞??冽?脫迫頝?
+                            // 【關鍵修復】：儲存載入/自適應計算完畢後的原始 Position、Scale 與 Y 軸基準，用於防止跑位
                             mainModel.userData.originScale = mainModel.scale.x;
                             mainModel.userData.originPosition = mainModel.position.clone();
                             mainModel.userData.originY = mainModel.position.y;
                             
-                            // ????頧皞?嚗誑璅∪?頛???????箸?
+                            // 初始化旋轉基準點：以模型載入時的原始旋轉為準
                             identityQuat.copy(mainModel.quaternion);
                             targetQuat.copy(mainModel.quaternion);
                         } else if (!isCustom) {
-                            // 摨漣?拐辣嚗?箏蔣摮?嗆?鞈迎??梯?璅∪??祈澈雿??蔣摮?
+                            // 底座物件：改為影子接收材質，隱藏模型本身但保留影子
                             const baseShadowMat = new THREE.ShadowMaterial({ 
                                 opacity: 0.45 
                             });
@@ -2319,36 +2319,36 @@ CHANGE LOG & VERSION HISTORY
                 });
                 
                 if (isCustom && !foundMain) {
-                    console.warn("銝?芋?葉?曆???Mesh 蝯?");
+                    console.warn("上傳的模型中找不到 Mesh 結構");
                 }
             });
         }
 
-        // ??頛撠??身璅∪?
+        // 初始載入專案預設模型
         loadModel('./3D modeling/3D_Lab_all.glb', false);
 
-        // 撘瑕???????(Spotlight)
-        shadowLight = new THREE.SpotLight(0xffffff, 150); // ??撘瑕漲隞亥???摨衣噬??
+        // 強化動態聚光燈 (Spotlight)
+        shadowLight = new THREE.SpotLight(0xffffff, 150); // 提高強度以補償高度羽化
         shadowLight.position.set(2, 12, 2);
-        shadowLight.angle = Math.PI / 8; // 蝔凝?祝銝暺?嚗???摨衣噬??
-        shadowLight.penumbra = 1.0; // 璆菔蝢賢?
+        shadowLight.angle = Math.PI / 8; // 稍微拉寬一點點，配合高度羽化
+        shadowLight.penumbra = 1.0; // 極致羽化
         shadowLight.decay = 2; 
         shadowLight.distance = 50;
         
         shadowLight.castShadow = true;
-        // ?芸?敶勗??釭 (蝢賢??楠)
+        // 優化影子品質 (羽化邊緣)
         shadowLight.shadow.mapSize.width = 2048;
         shadowLight.shadow.mapSize.height = 2048;
         shadowLight.shadow.camera.near = 1;
         shadowLight.shadow.camera.far = 50;
         shadowLight.shadow.focus = 1;
-        shadowLight.shadow.radius = 12; // 憓? radius 隞亙祕?暸?蝺???噬??(Feather)
+        shadowLight.shadow.radius = 12; // 增加 radius 以實現邊緣柔和羽化 (Feather)
         
         scene.add(shadowLight);
-        scene.add(shadowLight.target); // 蝣箔? target 撌脣??亙??
+        scene.add(shadowLight.target); // 確保 target 已加入場景
         shadowLight.target.position.set(0, 0, 0);
 
-        // --- 蝬??∠?暺?鈭辣 (?餌?蝵抵???矽頧蝟餌絞) ---
+        // --- 綁定卡片點擊事件 (玻璃罩與煙霧協調轉場系統) ---
         document.querySelectorAll('.showcase-card').forEach(card => {
             card.addEventListener('click', () => {
                 if (isMaterialTransitioning || isTransitioning) return;
@@ -2359,29 +2359,29 @@ CHANGE LOG & VERSION HISTORY
                 if (preset) {
                     isMaterialTransitioning = true;
                     
-                    // 閮???鞈芰??嗅??????冽頧??
+                    // 記錄舊材質的當前參數狀態，用於轉場插值
                     oldPreset = { ...params };
                     newPreset = { ...preset };
                     currentTransitionPresetKey = presetKey;
                     
-                    // ?寞?雿輻??瘙????鞈芯?敺蝙?冽??啁? Cyberpunk ?恍????寞?
+                    // 根據使用者要求，所有材質一律使用最新的 Cyberpunk 畫面撕裂過場特效
                     sharedTransitionPreset.value = 0.0;
                     
-                    // 1. ?????? UI ??嚗甇ａ?銴???
+                    // 1. 鎖定所有卡片與 UI 切換，防止重複點擊
                     document.querySelectorAll('.showcase-card').forEach(c => {
                         c.classList.add('transition-lock');
                         c.classList.remove('active');
                     });
-                    card.classList.add('active'); // 璅內?桀??訾葉
+                    card.classList.add('active'); // 標示目前選中
                     
-                    // 暺?敺?0.3 蝘?撟單??脣??擐? (3D璅∪??)
+                    // 點擊後 0.3 秒，平滑捲動回到首屏 (3D模型區)
                     setTimeout(() => {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     }, 300);
                     
-                    // 2. ??頧??頠詨???(蝮質? 4.5 蝘??暹?寞?)
+                    // 2. 啟動轉場時間軸動畫 (總計 4.5 秒，放慢特效)
                     let startTime = null;
-                    // ?寞?閬死?摨佗?撠??瑚??野撣嗆偌??4.5 蝘葬?剔銋曇?靽??1.8 蝘?(1800ms)
+                    // 根據視覺順暢度，將過長且拖泥帶水的 4.5 秒縮短為乾脆俐落的 1.8 秒 (1800ms)
                     const duration = 1800;
                     let swapped = false;
                     
@@ -2390,39 +2390,39 @@ CHANGE LOG & VERSION HISTORY
                         const elapsed = timestamp - startTime;
                         const progress = Math.min(elapsed / duration, 1.0);
                         
-                        transitionProgress = progress; // 撽? animate() 銝剔??餌?蝵?Y 摨扳????抒?摮???
+                        transitionProgress = progress; // 驅動 animate() 中的玻璃罩 Y 座標與煙霧粒子動畫
                         
-                        // ?函?銝剖?暺?(0.35)嚗??挾霈翰嚗迨???歇?扔暺?
+                        // 臨界中心點 (0.35)，因前段變快，此時消融已達極點
                         if (progress >= 0.35 && !swapped) {
                             swapped = true;
                             
-                            // 憟?唳?鞈?Preset ?
+                            // 套用新材質 Preset 參數
                             Object.assign(params, preset);
                             applyCurrentParamsToModel();
                             updateEnvironmentMap();
                             
-                            // ?郊 ?芸?蝢?UI ?Ｘ
+                            // 同步 自定義 UI 面板
                             updateCustomUIValues();
                             
-                            // ?芣? WATER ?釭???行????
+                            // 只有 WATER 材質開啟焦散光斑效果
                             if (presetKey === 'WATER') {
                                 targetCausticIntensity = 1.0;
                             } else {
                                 targetCausticIntensity = 0.0;
                             }
                             
-                            // ?芸?撟單?皛曉??雯????(擐?) ?嫣噶?汗
+                            // 自動平滑滾動回網頁頂部 (首屏) 方便預覽
                             window.scrollTo({ top: 0, behavior: 'smooth' });
                         }
                         
                         if (progress < 1.0) {
                             requestAnimationFrame(transitionStep);
                         } else {
-                            // 頧蝯?嚗敺抵?閫??
+                            // 轉場結束，恢復與解鎖
                             transitionProgress = 0.0;
                             isMaterialTransitioning = false;
                             
-                            // 閫???∠?
+                            // 解鎖卡片
                             document.querySelectorAll('.showcase-card').forEach(c => {
                                 c.classList.remove('transition-lock');
                             });
@@ -2436,7 +2436,7 @@ CHANGE LOG & VERSION HISTORY
             });
         });
         
-        // --- 蝔???????(Procedural Caustics Gobo) ---
+        // --- 程式化焦散光斑 (Procedural Caustics Gobo) ---
         const causticTarget = new THREE.WebGLRenderTarget(512, 512, {
             minFilter: THREE.LinearFilter,
             magFilter: THREE.LinearFilter,
@@ -2519,7 +2519,7 @@ CHANGE LOG & VERSION HISTORY
         causticScene.add(causticPlane);
         shadowLight.map = causticTarget.texture;
 
-        // 4. ?餈游?
+        // 4. 動畫迴圈
         const clock = new THREE.Clock();
 
         function animate() {
@@ -2594,43 +2594,43 @@ CHANGE LOG & VERSION HISTORY
                 }
             }
 
-            // --- 3D ?釭?芾?頧?寞?蝟餌絞 (A, B, C 銝車閬死?寞?嚗歇蝘駁蝎??寞?) ---
+            // --- 3D 材質自訂轉場特效系統 (A, B, C 三種視覺方案，已移除粒子特效) ---
             if (isMaterialTransitioning && mainModel) {
                 sharedTime.value = time;
                 const pVal = sharedTransitionPreset.value;
 
-                // ?寞? A (WATER): ??瘜Ｘ答韏瑚? + Noise Dissolve
+                // 方案 A (WATER): 頂點波浪起伏 + Noise Dissolve
                 if (pVal === 0.0) {
                     let dVal = 0.0;
                     let jitterVal = 0.0;
-                    // 霈?????Ｗ? RGB ??????頠詨??券???
-                    // ?踹??Ｙ???憭?-> 蝛箇?恍?? -> ?箇???瑕惜??
+                    // 讓「消融」與「全螢幕 RGB 撕裂」的時間軸完全重疊
+                    // 避免產生「消失 -> 空白畫面撕裂 -> 出現」的斷層感
                     if (transitionProgress < 0.35) {
                         let localT = transitionProgress / 0.35;
-                        dVal = Math.pow(localT, 1.5); // 璅∪???瘨?
-                        jitterVal = Math.pow(localT, 1.5); // ?恍?????撓憓撥
+                        dVal = Math.pow(localT, 1.5); // 模型開始消融
+                        jitterVal = Math.pow(localT, 1.5); // 畫面撕裂「同時」逐漸增強
                     } else {
                         let appearProg = (transitionProgress - 0.35) / 0.65;
-                        dVal = Math.pow(1.0 - appearProg, 1.8); // 璅∪???瘚桃
-                        // ?恍??銝??祇?甇賊嚗隡湧?芋?筑?曄??????撓瘛∪
+                        dVal = Math.pow(1.0 - appearProg, 1.8); // 模型開始浮現
+                        // 畫面撕裂不要瞬間歸零，而是伴隨著模型浮現的過程「同時」逐漸淡出
                         jitterVal = Math.pow(1.0 - appearProg, 3.0); 
                     }
                     sharedDissolve.value = THREE.MathUtils.smoothstep(dVal, 0.0, 1.0);
                     sharedDistortion.value = jitterVal * 0.45;
                     sharedHoloTransition.value = -2.0;
                     
-                    // 鞈賢?樴? 2077 憸冽?刻撟?鋆?(CyberGlitchShader)
+                    // 賽博龐克 2077 風格全螢幕撕裂 (CyberGlitchShader)
                     rgbShiftPass.uniforms['time'].value = time;
                     const leftPanel = document.getElementById('left-panel');
                     if (jitterVal > 0.05) {
-                        // ?拍雿 sine ?Ｙ???撘? Glitch
+                        // 利用低頻 sine 產生脈衝式的 Glitch
                         let slowGlitch = Math.sin(time * 25.0);
                         if (slowGlitch > 0.5) {
-                            rgbShiftPass.uniforms['amount'].value = jitterVal; // ?喲?摰??jitterVal 蝯?CyberGlitchShader
+                            rgbShiftPass.uniforms['amount'].value = jitterVal; // 傳遞完整的 jitterVal 給 CyberGlitchShader
                             
-                            // 撌血?Ｘ CSS ?臭??郊
+                            // 左側面板 CSS 錯位同步
                             if (leftPanel) {
-                                leftPanel.style.transform = `translate(${(Math.random()-0.5)*15}px, 0px)`; // ?芸?瘞游像雿宏
+                                leftPanel.style.transform = `translate(${(Math.random()-0.5)*15}px, 0px)`; // 只做水平位移
                                 leftPanel.style.filter = `drop-shadow(5px 0 0 rgba(255,0,255,0.7)) drop-shadow(-5px 0 0 rgba(0,255,255,0.7))`;
                             }
                         } else {
@@ -2651,7 +2651,7 @@ CHANGE LOG & VERSION HISTORY
                     const origS = mainModel.userData.originScale || 1.0;
                     mainModel.scale.setScalar(origS);
                 }
-                // ?寞? C (HOLO): ??蝺???
+                // 方案 C (HOLO): 掃描線消融
                 else if (pVal === 2.0) {
                     let holoVal = -2.0;
                     if (transitionProgress < 0.5) {
@@ -2679,55 +2679,55 @@ CHANGE LOG & VERSION HISTORY
                 mainModel.scale.setScalar(origS);
             }
 
-            // --- 蝎?蝟餌絞???湔 (Holographic Radial Dissolve) ---
+            // --- 粒子系統動態更新 (Holographic Radial Dissolve) ---
             if (dissolveParticles) {
                 const positions = dissolveParticles.geometry.attributes.position.array;
                 
                 if (isMaterialTransitioning && sharedTransitionPreset.value === 0.0) {
-                    // ?寞?頧?挾???寞?憿嚗?憭梁???莎??箇?冽憿
+                    // 根據轉場階段切換特效顏色：消失用舊顏色，出現用新顏色
                     const activeColorHex = (transitionProgress < 0.35) 
                         ? (oldPreset.effectColor || oldPreset.color || 0x00d0ff)
                         : (newPreset.effectColor || newPreset.color || 0x00d0ff);
                     const targetBaseColor = new THREE.Color(activeColorHex);
                     sharedDissolveColor.value.copy(targetBaseColor);
                     
-                    // 憒?甇?雿輻 Radial Dissolve嚗?潛?摮?
+                    // 如果正在使用 Radial Dissolve，噴發粒子
                     const currentRadius = sharedDissolve.value * 2.5;
                     
                     for (let i = 0; i < particleCount; i++) {
-                        if (Math.random() < 0.06) { // ?冽????啁?摮?
+                        if (Math.random() < 0.06) { // 隨機生成新粒子
                             const theta = Math.random() * Math.PI * 2;
                             const phi = Math.acos((Math.random() * 2) - 1);
-                            const r = currentRadius + (Math.random() * 0.4 - 0.2); // ?冽??????
+                            const r = currentRadius + (Math.random() * 0.4 - 0.2); // 在消融邊界周圍
                             
                             positions[i*3] = r * Math.sin(phi) * Math.cos(theta);
                             positions[i*3+1] = r * Math.sin(phi) * Math.sin(theta);
                             positions[i*3+2] = r * Math.cos(phi);
                             
-                            // 鞈虫????撒撠??漲嚗?銝?敺桀?銝?瘚?
+                            // 賦予向外的輻射初速度，加上輕微向上飄浮
                             particleVelocities[i*3] = positions[i*3] * 0.15 + (Math.random()-0.5)*0.5;
                             particleVelocities[i*3+1] = positions[i*3+1] * 0.15 + Math.random()*0.8;
                             particleVelocities[i*3+2] = positions[i*3+2] * 0.15 + (Math.random()-0.5)*0.5;
                         } else {
-                            // ?湔?暹?蝎?雿蔭
+                            // 更新現有粒子位置
                             positions[i*3] += particleVelocities[i*3] * 0.016;
                             positions[i*3+1] += particleVelocities[i*3+1] * 0.016;
                             positions[i*3+2] += particleVelocities[i*3+2] * 0.016;
                             
-                            // ?餃側皜?
+                            // 阻尼減速
                             particleVelocities[i*3] *= 0.92;
                             particleVelocities[i*3+1] *= 0.92;
                             particleVelocities[i*3+2] *= 0.92;
                         }
                     }
                     
-                    // ??隤踵憿嚗蝙?冽?鞈芯蜓?脖蒂?冽?擃蔭???賜鈭?(蝔凝??瘜蝔漲嚗??敶?
+                    // 動態調整顏色，使用材質主色並在最高潮時泛白發亮 (稍微降低泛白程度，保留色彩)
                     const t = sharedDissolve.value;
                     const pColor = targetBaseColor.clone().lerp(new THREE.Color(0xffffff), t * 0.5);
                     dissolveParticles.material.color.copy(pColor);
                     dissolveParticles.material.opacity = 0.8;
                 } else {
-                    // ???渡???蝎?瞍豢撓??瘨
+                    // 非轉場狀態，粒子漸漸向上消散
                     for (let i = 0; i < particleCount; i++) {
                         if (positions[i*3+1] < 100) {
                             positions[i*3+1] += 0.08;
@@ -2743,7 +2743,7 @@ CHANGE LOG & VERSION HISTORY
         }
         animate();
 
-        // 5. ?踵?撘矽??
+        // 5. 響應式調整
         window.addEventListener('resize', () => {
             camera.aspect = container.clientWidth / container.clientHeight;
             camera.updateProjectionMatrix();
@@ -2751,7 +2751,7 @@ CHANGE LOG & VERSION HISTORY
             composer.setSize(container.clientWidth, container.clientHeight);
         });
 
-        // 6. 銝駁??????臬蔣???湔??
+        // 6. 主題切換與背景影片轉場控制
         const themeToggle = document.getElementById('theme-toggle');
         const switcherContainer = document.querySelector('.theme-switcher');
         const body = document.body;
@@ -2760,7 +2760,7 @@ CHANGE LOG & VERSION HISTORY
         let isTransitioning = false;
         let transitionFallbackTimeout = null;
 
-        // 蝯曹?閫??????敶勗?敺拙??賢?
+        // 統一解鎖與背景/影子復原函式
         function unlockThemeToggle(theme) {
             if (transitionFallbackTimeout) {
                 clearTimeout(transitionFallbackTimeout);
@@ -2771,19 +2771,19 @@ CHANGE LOG & VERSION HISTORY
             if (switcherContainer) {
                 switcherContainer.classList.remove('transition-lock');
             }
-            // ?? WebGL ????蔣摮?
+            // 還原 WebGL 靜態背景與影子
             if (theme === 'light') {
-                scene.background = null; // Light mode 霈?WebGL ???嚗 CSS #bg-image-layer 鞎痊
-                targetShadowMultiplier = 0.3; // 瘛箄?敶勗???0.3 ?皜楚??
+                scene.background = null; // Light mode 讓 WebGL 背景透明，由 CSS #bg-image-layer 負責
+                targetShadowMultiplier = 0.3; // 淺色限制影子在 0.3 達到減淡效果
             } else {
                 scene.background = darkBgFlat;
-                targetShadowMultiplier = 1.0; // 瘛梯璅∪??Ｗ儔摰敶勗?撘瑕漲
+                targetShadowMultiplier = 1.0; // 深色模式恢復完整影子強度
             }
             updateEnvironmentMap();
             console.log(`Transition to ${theme} completed. Switcher unlocked.`);
         }
 
-        // 閮餃??剜蝯?????(?????蝬?銝甈∴??踹???閮餃?)
+        // 註冊播放結束監聽器 (僅在初始化時綁定一次，避免重複註冊)
         vidBgB2W.addEventListener('ended', () => {
             vidBgB2W.classList.remove('active');
             unlockThemeToggle('light');
@@ -2805,16 +2805,16 @@ CHANGE LOG & VERSION HISTORY
             const currentTheme = body.getAttribute('data-theme');
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             
-            // 0. 閫貊敶勗?瘛∪
+            // 0. 觸發影子淡出
             targetShadowMultiplier = 0.0;
             
-            // 1. 閮剔蔭 UI 銝駁?嚗孛??CSS 霈?之??霈?鋡怨??游蔣???
+            // 1. 設置 UI 主題，觸發 CSS 變數與大背景圖改變（被轉場影片遮蓋）
             body.setAttribute('data-theme', newTheme);
             
-            // 2. ?澆璅∪??湔嚗蒂?喳 true 頝喲??閮剖?嚗?撠?scene.background 閮剔 null嚗蝙 WebGL ???
+            // 2. 呼叫模型更新，並傳入 true 跳過背景設定，這會將 scene.background 設為 null，使 WebGL 背景透明
             updateModelTheme(newTheme, true);
 
-            // 3. 閮剔蔭???3.5 蝘???圾??(????汗?冽甇?Ⅱ閫貊 ended 鈭辣)
+            // 3. 設置最長 3.5 秒防呆超時解鎖 (預防某些瀏覽器未正確觸發 ended 事件)
             transitionFallbackTimeout = setTimeout(() => {
                 if (isTransitioning) {
                     console.warn('Transition video ended event stalled. Force unlocking...');
@@ -2828,7 +2828,7 @@ CHANGE LOG & VERSION HISTORY
                 }
             }, 3500);
 
-            // 4. ?剜頧敶梁?
+            // 4. 播放轉場影片
             if (newTheme === 'light') {
                 vidBgW2B.classList.remove('active');
                 vidBgB2W.classList.add('active');
@@ -2858,7 +2858,7 @@ CHANGE LOG & VERSION HISTORY
             if (!mainModel) return;
             
             if (theme === 'light') {
-                // 瘛箄璅∪?嚗楛??莎?憓撥撠??釭??
+                // 淺色模式：深藍灰色，增強對比與質感
                 params.color = '#1e293b'; 
                 params.transmission = 0.95;
                 params.ior = 1.52;
@@ -2869,37 +2869,37 @@ CHANGE LOG & VERSION HISTORY
                 params.attenuationDistance = 0.0;
                 params.isToon = false;
             } else {
-                // 瘛梯璅∪?嚗敺拍??(?唳鞈芣?)
+                // 深色模式：恢復白色 (冰晶質感)
                 params.color = '#ffffff';
-                params.transmission = 1.0; // 敹???1.0 ??券??餌?
+                params.transmission = 1.0; // 必須為 1.0 才是全透明玻璃
                 params.ior = 1.5;
                 params.thickness = 3.0;
-                params.roughness = 0.05; // 璆萎?蝎?摨佗??踹??批?
-                params.metalness = 0.0;  // ?餌?銝府??撅祆?
+                params.roughness = 0.05; // 極低粗糙度，避免霧化
+                params.metalness = 0.0;  // 玻璃不該有金屬感
                 params.iridescence = 0.0;
                 params.attenuationDistance = 0.0;
                 params.isToon = false;
             }
             
-            // 撘瑕?湔璅∪??釭??甇?UI
+            // 強制更新模型材質與同步 UI
             updateCustomUIValues();
             if (typeof applyCurrentParamsToModel === 'function') {
                 applyCurrentParamsToModel();
             }
             
-            // ????憓?撠?
+            // 切換背景與環境映射
             if (!skipBackgroundUpdate) {
                 if (theme === 'light' && lightBgFlat) {
-                    scene.background = null; // Light mode 霈?WebGL ???嚗 CSS #bg-image-layer 鞎痊
+                    scene.background = null; // Light mode 讓 WebGL 背景透明，由 CSS #bg-image-layer 負責
                     scene.environment = hdriTexture || lightBgEnv;
                 } else if (theme === 'dark' && darkBgFlat) {
                     scene.background = darkBgFlat;
                     scene.environment = hdriTexture || darkBgEnv;
                 }
             } else {
-                // 頧銝哨?撠?WebGL ?閮剔 null嚗?嚗?雿?HTML ?敶梁??質◤??
+                // 轉場中：將 WebGL 背景設為 null（透明），使 HTML 背景影片能被看見
                 scene.background = null;
-                // 蝬剜??啣???嚗蝙?餌?靘?移蝺餃?撠?
+                // 維持環境映射，使玻璃依然有精緻反射
                 if (theme === 'light' && lightBgEnv) {
                     scene.environment = hdriTexture || lightBgEnv;
                 } else if (theme === 'dark' && darkBgEnv) {
@@ -2907,11 +2907,11 @@ CHANGE LOG & VERSION HISTORY
                 }
             }
             
-            // ?郊?啣?撘瑕漲
+            // 同步環境強度
             renderer.toneMappingExposure = theme === 'light' ? 0.8 : 1.2;
         }
 
-        // 7. 撠汗???頛?
+        // 7. 導覽列捲動邏輯
         function initNavScroll() {
             const nav = document.getElementById('main-nav');
             const hero = document.getElementById('hero-section');
@@ -2927,4 +2927,3 @@ CHANGE LOG & VERSION HISTORY
     </script>
 </body>
 </html>
-

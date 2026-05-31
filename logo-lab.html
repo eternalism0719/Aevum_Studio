@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEVUM STUDIO | 3D Space Showcase</title>
+    <meta name="description" content="A premium 3D space showcase demonstrating the Gallery and Observatory modes using high-fidelity renders.">
+    <link rel="stylesheet" href="logo-lab.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body data-theme="gallery">
+
+    <!-- WebGL Canvas Container -->
+    <div id="logo-canvas" data-model-src="3D modeling/3D_Lab_LOGO.glb" data-env-src="3D modeling/base_basic_shaded.glb">
+        <div class="canvas-loader" id="loader">INITIALIZING 3D ENVIRONMENT...</div>
+    </div>
+    <div class="noise-overlay" aria-hidden="true"></div>
+
+    <!-- UI Overlay (Glassmorphism) -->
+    <div class="ui-layer">
+        
+        <!-- Header -->
+        <header class="top-nav glass-panel">
+            <a href="index.html" class="brand" aria-label="Return to Home">
+                <span class="brand-text">AEVUM <span class="highlight">STUDIO</span></span>
+            </a>
+            <div class="status">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span class="status-text">WebGL // ACTIVE</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="hero-content">
+            <article class="info-panel glass-panel">
+                <div class="tag" aria-hidden="true">SHOWCASE // 001</div>
+                <h1 id="mode-title">Gallery Mode</h1>
+                <p id="mode-description">
+                    探索光影、材質與空間氛圍的交集。現在完全採用 WebGL 即時渲染您的 3D 場景。
+                </p>
+                
+                <div class="specs">
+                    <div class="spec-item">
+                        <span class="spec-label">RENDER ENGINE</span>
+                        <span class="spec-value">THREE.JS / WebGL</span>
+                    </div>
+                    <div class="spec-item">
+                        <span class="spec-label">MATERIALS</span>
+                        <span class="spec-value">PBR / SHADED</span>
+                    </div>
+                </div>
+            </article>
+        </main>
+
+        <!-- Environment Controls -->
+        <div class="controls-wrapper">
+            <div class="switcher-panel glass-panel" role="tablist" aria-label="Environment Switcher">
+                
+                <button class="switch-btn mode-button active" data-mode="gallery" role="tab" aria-selected="true">
+                    <div class="btn-icon" aria-hidden="true">
+                        <!-- Sun Icon -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                    </div>
+                    <div class="btn-text">
+                        <strong>Gallery Mode</strong>
+                        <span>亮色展間</span>
+                    </div>
+                </button>
+                
+                <div class="divider" aria-hidden="true"></div>
+                
+                <button class="switch-btn mode-button" data-mode="observatory" role="tab" aria-selected="false">
+                    <div class="btn-icon" aria-hidden="true">
+                        <!-- Moon Icon -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </div>
+                    <div class="btn-text">
+                        <strong>Observatory Mode</strong>
+                        <span>暗色觀測室</span>
+                    </div>
+                </button>
+                
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- Three.js Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="logo-lab-viewer.js"></script>
+</body>
+</html>
