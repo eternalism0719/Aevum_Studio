@@ -1,0 +1,55 @@
+# ============================================================
+# AEVUM STUDIO — .gitignore
+# ============================================================
+
+# ── Node.js ──────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Python 虛擬環境 ───────────────────────────────────────────
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# ── AI / IDE 工具設定目錄 ─────────────────────────────────────
+.agent/
+.agents/
+.claude/
+.codebuddy/
+.codex/
+.continue/
+.cursor/
+.gemini/
+.kiro/
+.opencode/
+.qoder/
+.roo/
+.trae/
+.windsurf/
+.vscode/
+
+# ── 開發日誌與任務文件 ────────────────────────────────────────
+changelogs/
+CONVERSATION_HISTORY.md
+vimeo_update_task.md
+
+# ── 實驗 / 草稿頁面 ───────────────────────────────────────────
+test*.html
+glass_test*.html
+experiment*.html
+particle_test.html
+shockwave_test.html
+code.html
+
+# ── 大型素材參考目錄 ──────────────────────────────────────────
+reference_battle/
+
+# ── OS 產生的雜項 ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.bak
