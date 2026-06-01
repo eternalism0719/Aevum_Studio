@@ -7,57 +7,57 @@ const projects = [
     {
         id: 1,
         title: "凱基銀行 2024",
-        role: "Modeling · UI Design · Material · Animation · Lighting · Render · Compositing",
-        description: "負責凱基專案 360 度環境建模以及金屬材質表現，使用 Blender 與 Arnold 渲染。",
+        role: "Modeling · Material · Animation · Lighting · Compositing",
+        description: "擔任 3D 動畫組長，全權負責 360 度場景建構、硬表面建模與材質動態設定。",
         video: "https://vimeo.com/1178407017?fl=tl&fe=ec",
         thumbnail: "images/凱基銀行.png",
         orientation: "landscape",
-        tags: ["Blender"],
-        category: "motion"
+        tags: ["BLENDER", "AE"],
+        category: "blender ae"
     },
     {
         id: 2,
         title: "大金空調 100年",
-        role: "Hardsurface Modeling · Material · Animation · Particle Simulation · Lighting · Render · Compositing",
-        description: "大金空調百年紀念影片，處理 3D 動態與視覺特效合成設計。",
+        role: "Modeling · Particle Sim · Lighting · Compositing",
+        description: "參與百年紀念影片製作，負責高精度產品還原建模與複雜的粒子動態模擬統籌。",
         video: "https://vimeo.com/1178406852?fl=tl&fe=ec",
         thumbnail: "images/大金空調.png",
         orientation: "landscape",
-        tags: ["Blender"],
-        category: "houdini"
+        tags: ["BLENDER"],
+        category: "blender"
     },
     {
         id: 3,
         title: "麥當勞歡樂送系列",
-        role: "VFX Technical Director",
-        description: "麥當勞相關系列廣告視覺特效，使用 Houdini 處理物理與流體動力學。",
+        role: "MOTION GRAPHIC · COMPOSITING",
+        description: "重新構思當季新品之動態影像（MG），統籌視覺節奏編排與配樂音效合成。",
         video: "https://vimeo.com/1178406993?fl=tl&fe=ec",
         thumbnail: "images/麥當勞.png",
         orientation: "landscape",
-        tags: ["Houdini", "Fluid FX", "Compositing"],
-        category: "houdini"
+        tags: ["MG", "AE"],
+        category: "mg ae"
     },
     {
         id: 4,
         title: "蘭諾 Lenor 衣物芳香豆",
-        role: "Lead 3D Artist",
-        description: "高階產品外觀著色與 3D 動畫模擬，負責粒子與材質特效。",
+        role: "CLOTH SIMULATION · PARTICLE SIMULATION · LIGHTING · COMPOSITING",
+        description: "主導產品展示動畫與視覺特效，涵蓋擬真的布料動力學模擬、粒子控制與畫面調色。",
         video: "https://vimeo.com/1178406922?fl=tl&fe=ec",
         thumbnail: "images/蘭諾_Lenor.png",
         orientation: "landscape",
-        tags: ["Lighting", "Motion Graphics", "Particles"],
-        category: "motion"
+        tags: ["BLENDER"],
+        category: "blender"
     },
     {
         id: 5,
         title: "7-11 寶可夢 Pokémon",
-        role: "3D Motion Designer",
-        description: "針對社群媒體製作的宣傳影片，整合 IP 授權角色與 3D 環境。",
+        role: "MOTION GRAPHIC · COMPOSITING",
+        description: "配合寶可夢聯名商品宣傳，將 IP 角色結合視覺，製作獨特漫畫風格之高動態 MG 影像。",
         video: "https://vimeo.com/1178406654?fl=tl&fe=ec",
         thumbnail: "images/7-11_寶可夢.png",
         orientation: "portrait",
-        tags: ["Blender", "Motion Design", "Social Media"],
-        category: "blender"
+        tags: ["AE"],
+        category: "ae"
     }
 ];
 
@@ -165,7 +165,7 @@ function initFilterTabs() {
             const filter = tab.dataset.filter;
             const cards = grid?.querySelectorAll('.project-card');
             cards?.forEach(card => {
-                const match = filter === 'all' || card.dataset.category === filter;
+                const match = filter === 'all' || card.dataset.category.includes(filter);
                 card.style.transition = 'opacity 0.3s, transform 0.3s';
                 if (match) {
                     card.style.opacity = '1';
