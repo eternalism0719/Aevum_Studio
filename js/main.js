@@ -290,7 +290,13 @@ window.addEventListener('keydown', (e) => {
 
 /* ------ Showreel ------ */
 function openShowreel() {
-    if (projects.length > 0) openModal(projects[0]);
+    openModal({
+        title: "SHOWREEL",
+        role: "Director / 3D Artist",
+        description: "Aevum Studio Showreel",
+        video: "https://vimeo.com/1197317114",
+        tags: ["Showreel", "VFX", "3D"]
+    });
 }
 
 /* ------ Magnetic & Pro Cursor ------ */
@@ -618,6 +624,20 @@ function initHeroMouseTilt() {
     });
 }
 
+/* ------ Hero Video Loop (0-20s) ------ */
+function initHeroVideoLoop() {
+    const iframe = document.getElementById('hero-video');
+    if (!iframe || typeof Vimeo === 'undefined') return;
+
+    const player = new Vimeo.Player(iframe);
+    
+    player.on('timeupdate', function(data) {
+        if (data.seconds >= 20) {
+            player.setCurrentTime(0);
+        }
+    });
+}
+
 /* ------ Init ------ */
 document.addEventListener('DOMContentLoaded', () => {
     initGallery();
@@ -630,6 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initHeroScrollToAbout();
     initHeroMouseTilt();
     initGamesLockdown();
+    initHeroVideoLoop();
 });
 
 /* ------ Games Lockdown & Purge Logic ------ */

@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    AINA VISUALS — PORTFOLIO DESIGN SYSTEM v3.0
    ============================================================ */
 
@@ -977,11 +977,11 @@ section[id] {
     z-index: 0;
 }
 
-.video-bg video {
+.video-bg video, .video-bg iframe {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: brightness(0.15) saturate(0.7) contrast(1.15);
+    filter: brightness(0.25) grayscale(1) contrast(1.15); /* Updated per user request */
 }
 
 .video-color-grade {
@@ -1012,9 +1012,8 @@ section[id] {
     display: flex;
     justify-content: center;
     gap: 16px;
-    flex-wrap: wrap;
+    white-space: nowrap; /* Prevent wrapping */
     z-index: 10;
-    width: 100%;
 }
 
 .hero-badge {
@@ -1713,6 +1712,7 @@ h1.large-title {
 .gallery-section {
     position: relative;
     background: transparent;
+    margin-top: 15vh; /* Pushed down */
 }
 
 /* Filter tabs */
@@ -1951,7 +1951,8 @@ h1.large-title {
 .clients-section {
     border-top: 1px solid var(--border);
     border-bottom: none; /* 與下方 Footer 懸浮隔離，移除底線 */
-    padding: 60px 0 180px; /* 大幅增加下方留白空間 */
+    margin-top: 10vh; /* Pushed down */
+    padding: 60px 0 20px; /* Reduced bottom padding to move closer to footer */
     overflow: hidden;
 }
 
@@ -2032,14 +2033,14 @@ h1.large-title {
 .footer-inner {
     max-width: 1280px;
     margin: 0 auto;
-    padding: 80px 5% 40px;
+    padding: 30px 5% 15px; /* Compressed footer padding */
 }
 
 .footer-top {
     display: grid;
     grid-template-columns: 2fr 1fr 1fr 1.5fr;
-    gap: 60px;
-    margin-bottom: 60px;
+    gap: 30px; /* Compressed gap */
+    margin-bottom: 25px; /* Compressed margin */
 }
 
 .footer-logo {
@@ -2051,7 +2052,7 @@ h1.large-title {
     font-weight: 500;
     letter-spacing: 10px;
     color: var(--text-1);
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem; /* Compressed margin */
 }
 
 .footer-logo-img {
@@ -2074,7 +2075,7 @@ h1.large-title {
     font-size: 0.65rem;
     color: var(--text-2);
     letter-spacing: 3px;
-    margin: 1.2rem 0 1.5rem;
+    margin: 0.6rem 0 0.8rem; /* Compressed margin */
     opacity: 0.8;
 }
 
@@ -2088,7 +2089,7 @@ h1.large-title {
 .footer-tagline {
     font-size: 0.88rem;
     color: var(--text-3);
-    line-height: 1.9;
+    line-height: 1.4; /* Compressed line-height */
 }
 
 .footer-col-title {
@@ -2096,7 +2097,7 @@ h1.large-title {
     font-size: 0.65rem;
     color: var(--cyan);
     letter-spacing: 4px;
-    margin-bottom: 1.2rem;
+    margin-bottom: 0.6rem; /* Compressed margin */
     opacity: 0.7;
 }
 
@@ -2109,7 +2110,7 @@ h1.large-title {
 .footer-link {
     font-size: 0.88rem;
     color: var(--text-3);
-    padding: 6px 0;
+    padding: 3px 0; /* Compressed padding */
     transition: color 0.3s;
     border-bottom: 1px solid transparent;
 }
@@ -2121,8 +2122,8 @@ h1.large-title {
 .footer-cta-text {
     font-size: 0.88rem;
     color: var(--text-3);
-    margin-bottom: 1.4rem;
-    line-height: 1.7;
+    margin-bottom: 0.8rem; /* Compressed margin */
+    line-height: 1.4; /* Compressed line-height */
 }
 
 .footer-cta-col {
@@ -2136,10 +2137,10 @@ h1.large-title {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 32px;
+    padding-top: 16px; /* Compressed padding */
     border-top: 1px solid var(--border);
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 8px; /* Compressed gap */
 }
 
 .footer-copy {

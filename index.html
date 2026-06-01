@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -30,7 +30,6 @@
     <!-- HUD Overlay Decorations -->
     <div class="hud-corners top-left" aria-hidden="true">ST_772 // DATA_SYNC</div>
     <div class="hud-corners top-right" aria-hidden="true">VFX_CORE // ACTIVE</div>
-    <div class="hud-corners bottom-left" aria-hidden="true">OS_VER_3.0.0</div>
     <div class="hud-corners bottom-right" aria-hidden="true">LATENCY: 2ms</div>
 
     <!-- Preloader -->
@@ -81,7 +80,7 @@
         
         <nav id="nav-links" aria-label="Main navigation">
              <a href="project.html" class="nav-link">PROJECT</a>
-            <a href="brand.html" class="nav-link active">BRAND</a>
+            <a href="brand.html" class="nav-link">BRAND</a>
             <a href="3d_lab.html" class="nav-link">EXPERIMENT</a>
             <a href="games.html" class="nav-link">GAMES</a>
         </nav>
@@ -97,18 +96,15 @@
         =============================== -->
         <section class="hero" id="hero">
             <div class="video-bg">
-                <video autoplay muted loop playsinline id="hero-video" preload="auto">
-                    <source src="https://vimeo.com/1178407017?fl=pl&fe=sh" type="video/mp4">
-                </video>
+                <iframe src="https://player.vimeo.com/video/1178407017?background=1&autoplay=1&loop=1&byline=0&title=0" frameborder="0" allow="autoplay; fullscreen" style="position: absolute; top: 50%; left: 50%; width: 100vw; height: 56.25vw; min-height: 100vh; min-width: 177.77vh; transform: translate(-50%, -50%); pointer-events: none;" id="hero-video"></iframe>
                 <div class="video-color-grade"></div>   
             </div>
 
             <!-- Top aligned Banners with 3D Tilt -->
             <div class="hero-badge-row tilt-float-fast">
                 <span class="hero-badge">
-                    <i class="badge-dot"></i>AVAILABLE FOR P.J. PROJECT
+                    <i class="badge-dot"></i>AVAILABLE FOR P.J. PROJECT <span style="opacity: 0.6; margin-left: 6px; font-weight: normal; color: var(--text-3);">2024 — 2026</span>
                 </span>
-                <span class="hero-badge dim">2024 — 2026</span>
             </div>
 
             <div class="hero-overlay tilt-float">
@@ -349,15 +345,15 @@
                 </div>
                 <div class="footer-links-col">
                     <h4 class="footer-col-title">CONTACT</h4>
-                    <a href="mailto:eternalframePJ@gmail.com" class="footer-link">eternalframePJ@gmail.com</a>
+                    <a href="#" class="footer-link" onclick="navigator.clipboard.writeText('eternalframePJ@gmail.com'); alert('Copied to clipboard!'); return false;" title="Click to copy">eternalframePJ@gmail.com</a>
                     <a href="#" class="footer-link" id="footer-artstation">ArtStation</a>
-                    <a href="#" class="footer-link" id="footer-linkedin">LinkedIn</a>
-                    <a href="https://vimeo.com/user256640911" target="_blank" class="footer-link" id="footer-vimeo">Vimeo</a>
+                    <a href="https://www.instagram.com/pj_meit/" target="_blank" class="footer-link" id="footer-instagram">Instagram</a>
+                    <a href="https://vimeo.com/showcase/12236387" target="_blank" class="footer-link" id="footer-vimeo">Vimeo</a>
                 </div>
                 <div class="footer-cta-col">
                     <h4 class="footer-col-title">START A PROJECT</h4>
                     <p class="footer-cta-text">Open to freelance & studio collaboration.</p>
-                    <a href="mailto:eternalframePJ@gmail.com" class="btn-primary btn-small" id="footer-contact-btn">
+                    <a href="https://line.me/ti/p/bFn92JRpQz" target="_blank" class="btn-primary btn-small" id="footer-contact-btn">
                         GET IN TOUCH
                         <span class="btn-line"></span>
                     </a>
@@ -402,6 +398,7 @@
     </div> <!-- End #site-wrapper -->
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://player.vimeo.com/api/player.js"></script>
     <script src="js/main.js"></script>
     <script src="js/grid-distortion.js"></script>
     <script src="js/3d-viewer.js"></script>
