@@ -67,7 +67,7 @@
       // Mouse / center repulsion
       vec2 repulsionCenter = mix(uMouse, vec2(0.0), uAutoCenterRepulsion);
       float distToMouse = length(uv - repulsionCenter);
-      float mouseRep = exp(-distToMouse * 3.0) * uRepulsionStrength;
+      float mouseRep = exp(-distToMouse * 6.0) * uRepulsionStrength;
       uv += normalize(uv - repulsionCenter) * mouseRep;
 
       uv *= rot(t * uRotationSpeed);
@@ -79,11 +79,13 @@
         float scale = mix(20.0, 0.1, z);
         float fade  = smoothstep(0.0, 0.2, z) * smoothstep(1.0, 0.8, z);
 
-        vec2 uv2 = uv * scale;
+        vec2 uv2 = uv * scale * rot(i * 2.39996); // Golden angle rotation per layer
         vec2 id  = floor(uv2);
-        vec2 gv  = fract(uv2) - 0.5;
 
         float h       = hash12(id);
+        float h2      = hash12(id + vec2(1.0, 0.0));
+        vec2 offset   = vec2(h, h2) - 0.5;
+        vec2 gv       = fract(uv2) - 0.5 - offset * 0.3;
         float twinkle = sin(t * uTwinkleIntensity + h * PI * 2.0) * 0.5 + 0.5;
         float d       = length(gv);
         float star    = 0.005 / d * fade * twinkle;
@@ -97,18 +99,7 @@
         finalColor += glow * col * fade;
       }
 
-      // Galactic core / nebulosity
-      float m    = 0.0;
-      vec2  uv3  = uv * 2.0;
-      for (float i = 0.0; i < 3.0; i++) {
-        float rays  = max(0.0, 1.0 - abs(uv3.x * uv3.y * 100.0));
-        float flare = max(0.0, 1.0 - length(uv3) * 0.5);
-        m += rays * flare * uGlowIntensity;
-        uv3 *= rot(PI / 3.0);
-      }
-
-      vec3 coreCol = hsv2rgb(vec3(uHueShift / 360.0, uSaturation * 0.5, 1.0));
-      finalColor  += m * coreCol * 0.2;
+      // Restore the "black hole" vignette that reacts to mouse repulsion
       finalColor  *= smoothstep(1.5, 0.5, length(uv));
 
       gl_FragColor = vec4(finalColor, 1.0);

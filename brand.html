@@ -833,7 +833,7 @@
         }
 
         .hero-brand > .relative.z-20 {
-            margin-top: -10vh;
+            margin-top: -2vh;
         }
 
         #about {
@@ -846,6 +846,7 @@
             inset: 0 !important;
             z-index: 0 !important;
             background: transparent !important;
+            transform: scale(1.15);
         }
 
         #site-wrapper {
@@ -861,6 +862,16 @@
         }
 
         main, section { background: transparent !important; }
+
+        @keyframes scroll-down-glow {
+            0% { transform: translateY(0%); opacity: 0; }
+            20% { opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translateY(100%); opacity: 0; }
+        }
+        .animate-scroll-down-glow {
+            animation: scroll-down-glow 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
     </style>
 </head>
 <body class="brand-page cyber-theme no-cursor">
@@ -995,8 +1006,11 @@
                 <!-- Section Bottom Gradient Ramp Mask -->
                 <div class="absolute bottom-0 left-0 w-full h-64 bg-gradient-to-t from-[#08080a] via-[#08080a]/60 to-transparent z-10 pointer-events-none"></div>
 
-                <div class="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 opacity-40">
-                    <div class="w-[1px] h-24 bg-gradient-to-b from-cyan-400/60 to-transparent"></div>
+                <div class="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 opacity-100 z-20">
+                    <div class="w-[2px] h-32 bg-cyan-400/20 relative rounded-full shadow-[0_0_15px_rgba(0,243,255,0.2)]">
+                        <!-- Bright Flowing Light Droplet -->
+                        <div class="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-transparent via-cyan-400 to-cyan-400 shadow-[0_0_15px_rgba(0,243,255,1),0_0_30px_rgba(0,243,255,0.8)] animate-scroll-down-glow rounded-full"></div>
+                    </div>
                 </div>
 
                 <!-- Optical Phase Selector: Fixed to Hero Position -->
