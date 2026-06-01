@@ -737,11 +737,15 @@
 
         /* UIUXPROMAX: High-Intensity Lens & Spatial Cursor */
         html {
-            scroll-snap-type: y mandatory;
+            scroll-snap-type: y proximity;
         }
 
-        .hero-brand, #about {
+        .hero-brand {
             scroll-snap-align: start;
+        }
+
+        .spatial-container, .nav-map-container, .content-container {
+            scroll-snap-align: center;
         }
 
         body.brand-page {
@@ -797,7 +801,6 @@
             position: relative;
             background: transparent !important;
             z-index: 10;
-            padding-bottom: 80px;
         }
 
         .content-section-wrap::before {
@@ -901,8 +904,8 @@
             <span class="font-mono text-[11px] text-white/90 world-time" data-timezone="America/New_York">--:--:--</span>
         </div>
         <div class="flex flex-col gap-1">
-            <span class="font-mono text-[9px] text-zinc-400 tracking-wider">LAX // USA</span>
-            <span class="font-mono text-[11px] text-white/90 world-time" data-timezone="America/Los_Angeles">--:--:--</span>
+            <span class="font-mono text-[9px] text-zinc-400 tracking-wider">REK // ICELAND</span>
+            <span class="font-mono text-[11px] text-white/90 world-time" data-timezone="Atlantic/Reykjavik">--:--:--</span>
         </div>
         <div class="flex flex-col gap-1">
             <span class="font-mono text-[9px] text-zinc-400 tracking-wider">BER // GERMANY</span>
@@ -915,7 +918,7 @@
     </div>
 
     <!-- HUD Workflow Interface (Left, appears on Map) -->
-    <div id="hud-workflow" class="fixed left-0 top-1/2 -translate-y-1/2 flex flex-col gap-6 z-[900] pointer-events-none opacity-90 hidden md:flex bg-[#08080a]/60 backdrop-blur-lg border border-cyan-400/20 border-l-0 pl-8 pr-6 py-8 rounded-r-2xl shadow-[0_0_30px_rgba(34,211,238,0.1)] transition-transform duration-[1200ms] ease-[cubic-bezier(0.16,1,0.3,1)]" style="transform: translate(-120%, -50%);">
+    <div id="hud-workflow" class="fixed left-0 top-[55%] -translate-y-1/2 flex flex-col gap-6 z-[900] pointer-events-none opacity-90 hidden md:flex bg-[#08080a]/60 backdrop-blur-lg border border-cyan-400/20 border-l-0 pl-8 pr-6 py-8 rounded-r-2xl shadow-[0_0_30px_rgba(34,211,238,0.1)] transition-transform duration-[1200ms] ease-[cubic-bezier(0.16,1,0.3,1)]" style="transform: translate(-120%, -50%);">
         <div class="flex items-center gap-3 mb-2 border-b border-cyan-400/20 pb-4">
             <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,211,238,0.8)]"></div>
             <span class="font-headline text-cyan-400 text-sm tracking-widest uppercase font-bold">Workflow_Nav</span>
@@ -1116,8 +1119,8 @@
                                 <!-- Arsenal Folder Stack (Integrated & Compact) -->
                                 <div class="arsenal-stack pt-2">
                                     <div class="flex items-center gap-2 mb-4 px-1">
-                                        <span class="material-symbols-outlined text-zinc-500 text-xs">inventory_2</span>
-                                        <h4 class="font-headline text-[9px] tracking-[0.3em] text-zinc-500 uppercase font-bold">Arsenal <span class="text-cyan-400/40 ml-2">TECH_CARTRIDGE</span></h4>
+                                        <span class="material-symbols-outlined text-zinc-300 text-sm">inventory_2</span>
+                                        <h4 class="font-headline text-[11px] tracking-[0.3em] text-zinc-300 uppercase font-bold">Arsenal <span class="text-cyan-400 ml-2">TECH_CARTRIDGE</span></h4>
                                     </div>
                                     
                                     <!-- 1. BLENDER -->
@@ -1197,10 +1200,12 @@
 
 
 
-                <!-- ?? INTERSTELLAR NAVIGATION MAP ?????????????????????? -->
-                <div class="nav-map-container relative w-full h-[700px] md:h-[900px] mt-32 mb-16 flex items-center justify-center overflow-hidden">
+                <!-- ?€?€ INTERSTELLAR NAVIGATION MAP ?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€?€ -->
+                <div class="nav-map-container relative w-full h-[700px] md:h-[900px] mt-48 mb-16 left-4 md:left-16 flex items-center justify-center overflow-hidden">
 
 
+                    <!-- Central Fade Ramp -->
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[75vw] h-[75vw] max-w-[900px] max-h-[900px] bg-black/60 blur-[80px] rounded-full z-0 pointer-events-none"></div>
                     <!-- Map Canvas (Native CSS 3D Scene) -->
                     <div class="relative w-full h-full max-w-7xl mx-auto flex items-center justify-center z-10">
                         
@@ -1249,7 +1254,7 @@
                             <div class="center-star">
                                 <img src="images/PJ_LOGO_matte.png" alt="AEVUM LOGO" class="w-[48px] h-[48px] object-contain" style="filter: drop-shadow(0 0 8px rgba(34, 211, 238, 0.9));">
                             </div>
-                            <div class="absolute top-[160px] left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 z-30 font-headline whitespace-nowrap">
+                            <div class="absolute top-[210px] left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 z-30 font-headline whitespace-nowrap">
                                 <span class="text-lg text-white tracking-[0.2em] uppercase font-black">End to End</span>
                                 <span class="font-body font-normal text-xs text-cyan-400 tracking-[0.3em]">FULL-CYCLE PRODUCTION</span>
                             </div>
@@ -1342,20 +1347,19 @@
                 </div>
 
 
-                <div class="content-container mt-32 mb-48 py-32 text-center">
+                <div class="content-container mt-16 mb-0 pt-32 pb-24 text-center">
                     <p class="font-mono text-cyan-400 text-xs tracking-[0.5em] uppercase mb-8">Ready to evolve?</p>
                     <h2 class="font-headline text-5xl md:text-8xl font-black uppercase tracking-tighter mb-12">
                         Let's Build the <span class="text-cyan-400">Future</span>.
                     </h2>
-                    <button class="px-16 py-6 bg-transparent border-2 border-cyan-400 text-cyan-400 font-headline font-black uppercase tracking-widest hover:bg-cyan-400 hover:text-zinc-950 transition-all duration-500 shadow-[0_0_40px_rgba(0,243,255,0.1)]">
+                    <button class="px-10 py-4 text-sm bg-transparent border-2 border-cyan-400 text-cyan-400 font-headline font-black uppercase tracking-widest hover:bg-cyan-400 hover:text-zinc-950 transition-all duration-500 shadow-[0_0_30px_rgba(0,243,255,0.1)]">
                         Start a Project
                     </button>
                 </div>
             </div>
         </main>
-    </div>
 
-    <footer class="site-footer" id="contact">
+    <footer class="site-footer" id="contact" style="margin-top: 0;">
         <div class="footer-inner">
             <div class="footer-top">
                 <div class="footer-brand">
@@ -1374,20 +1378,20 @@
                     <a href="index.html" class="footer-link">Home</a>
                     <a href="project.html" class="footer-link">Portfolio Projects</a>
                     <a href="brand.html" class="footer-link">Brand Story</a>
-                    <a href="3d_lab.html" class="footer-link">Experiment</a>
+                    <a href="experiment.html" class="footer-link">Experiment</a>
                     <a href="games.html" class="footer-link">Games</a>
                 </div>
                 <div class="footer-links-col">
                     <h4 class="footer-col-title">CONTACT</h4>
-                    <a href="mailto:eternalframePJ@gmail.com" class="footer-link">eternalframePJ@gmail.com</a>
+                    <a href="#" class="footer-link" onclick="navigator.clipboard.writeText('eternalframePJ@gmail.com'); alert('Copied to clipboard!'); return false;" title="Click to copy">eternalframePJ@gmail.com</a>
                     <a href="#" class="footer-link" id="footer-artstation">ArtStation</a>
-                    <a href="#" class="footer-link" id="footer-linkedin">LinkedIn</a>
-                    <a href="https://vimeo.com/user256640911" target="_blank" class="footer-link" id="footer-vimeo">Vimeo</a>
+                    <a href="https://www.instagram.com/pj_meit/" target="_blank" class="footer-link" id="footer-instagram">Instagram</a>
+                    <a href="https://vimeo.com/showcase/12236387" target="_blank" class="footer-link" id="footer-vimeo">Vimeo</a>
                 </div>
                 <div class="footer-cta-col">
                     <h4 class="footer-col-title">START A PROJECT</h4>
                     <p class="footer-cta-text">Open to freelance & studio collaboration.</p>
-                    <a href="mailto:eternalframePJ@gmail.com" class="btn-primary btn-small" id="footer-contact-btn">
+                    <a href="https://line.me/ti/p/bFn92JRpQz" target="_blank" class="btn-primary btn-small" id="footer-contact-btn">
                         GET IN TOUCH
                         <span class="btn-line"></span>
                     </a>
@@ -1395,10 +1399,11 @@
             </div>
             <div class="footer-bottom">
                 <span class="footer-copy">&copy; 2026 AEVUM STUDIO. All rights reserved.</span>
-                <span class="footer-build">BUILD: v3.3.3 // CYBER_UI</span>
+                <span class="footer-build">BUILD: v3.0.0 // CYBER_UI</span>
             </div>
         </div>
     </footer>
+    </div> <!-- Close #site-wrapper -->
 
     <script src="js/galaxy.js"></script>
     <script>
@@ -1488,7 +1493,7 @@
                         if (hudWorkflow) hudWorkflow.style.transform = 'translate(-120%, -50%)';
                     }
                 });
-            }, { threshold: 0.85 });
+            }, { threshold: 0.35 });
             workflowObserver.observe(navMapArea);
         }
 

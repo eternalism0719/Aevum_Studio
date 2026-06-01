@@ -2129,6 +2129,9 @@ h1.large-title {
 .footer-cta-col {
     display: flex;
     flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    justify-self: flex-end;
 }
 
 .footer-cta-col .footer-col-title { margin-bottom: 0.8rem; }
