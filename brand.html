@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hant-TW">
 <head>
     <meta charset="UTF-8">
@@ -8,6 +8,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;500&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <script>
+        const _warn = console.warn;
+        console.warn = function(...args) {
+            if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com should not be used in production')) return;
+            _warn.apply(console, args);
+        };
+    </script>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
@@ -920,25 +927,25 @@
                 <span class="absolute left-[-5.5px] top-1 w-[9px] h-[9px] rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]"></span>
                 <span class="font-mono text-[9px] text-cyan-400 tracking-wider">PHASE 01</span>
                 <span class="font-headline text-[12px] text-white tracking-widest uppercase font-bold">Pre-Production</span>
-                <span class="font-body text-[10px] text-zinc-400">??蝢?閮剖?</span>
+                <span class="font-body text-[10px] text-zinc-400">專案企劃與溝通</span>
             </div>
             <div class="flex flex-col gap-1 relative pl-5 border-l-2 border-zinc-700">
                 <span class="absolute left-[-5px] top-1 w-2 h-2 rounded-full bg-zinc-600"></span>
                 <span class="font-mono text-[9px] text-zinc-500 tracking-wider">PHASE 02</span>
                 <span class="font-headline text-[12px] text-white/80 tracking-widest uppercase font-bold">3D Production</span>
-                <span class="font-body text-[10px] text-zinc-400">??芋?ˊ雿?/span>
+                <span class="font-body text-[10px] text-zinc-400">3D模型與資產製作</span>
             </div>
             <div class="flex flex-col gap-1 relative pl-5 border-l-2 border-zinc-700">
                 <span class="absolute left-[-5px] top-1 w-2 h-2 rounded-full bg-zinc-600"></span>
                 <span class="font-mono text-[9px] text-zinc-500 tracking-wider">PHASE 03</span>
                 <span class="font-headline text-[12px] text-white/80 tracking-widest uppercase font-bold">VFX & Lighting</span>
-                <span class="font-body text-[10px] text-zinc-400">?寞???????/span>
+                <span class="font-body text-[10px] text-zinc-400">特效與燈光渲染</span>
             </div>
             <div class="flex flex-col gap-1 relative pl-5 border-l-2 border-transparent">
                 <span class="absolute left-[-5px] top-1 w-2 h-2 rounded-full bg-zinc-600"></span>
                 <span class="font-mono text-[9px] text-zinc-500 tracking-wider">PHASE 04</span>
                 <span class="font-headline text-[12px] text-white/80 tracking-widest uppercase font-bold">Final Output</span>
-                <span class="font-body text-[10px] text-zinc-400">?蝯葡?撓??/span>
+                <span class="font-body text-[10px] text-zinc-400">最終合成與輸出</span>
             </div>
         </div>
     </div>
@@ -1027,18 +1034,23 @@
 
                                     <div class="h-px w-full bg-gradient-to-r from-white/10 to-transparent my-2"></div>
 
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
+                                    <div class="grid grid-cols-1 md:grid-cols-[9fr_15fr] gap-8 md:gap-12">
                                         <div class="flex flex-col gap-4">
                                             <p class="text-zinc-300 font-body text-sm leading-relaxed tracking-wide">
-                                                <span class="text-white font-bold tracking-widest">AEVUM</span> is the space between the fleeting moment and the infinite. A state of duration belonging to things with a beginning but no end.
+                                                <span class="text-white font-bold tracking-widest">AEVUM</span> is the space between the fleeting moment and the infinite.<br/>
+                                                A state of duration belonging to things with a beginning but no end.
                                             </p>
                                         </div>
                                         <div class="flex flex-col justify-start border-l border-cyan-400/20 pl-6 md:pl-8 relative">
                                             <!-- Little corner decor -->
                                             <div class="absolute top-0 left-0 w-2 h-2 border-t border-l border-cyan-400/50"></div>
                                             <p class="text-zinc-500 font-body font-light text-xs md:text-sm leading-loose tracking-wide">
-                                                每一幀的渲染，都是對時間的雕琢。<br>
-                                                在瞬息萬變的數字洪流中，AEVUM STUDIO 追求的是超越視覺的永恆感。我們不只是在創作內容，而是在構築一個介於現實與抽象之間的永恆空間。
+                                                每一幀的渲染，都是對時間的雕琢。<br/>
+                                                在瞬息萬變的數字洪流中<br/>
+                                                AEVUM STUDIO 追求的是超越視覺的永恆感<br/>
+                                                我們不只是在創作內容<br/>
+                                                而是在構築一個介於現實與抽象之間的<br/>
+                                                永恆空間
                                             </p>
                                         </div>
                                     </div>
@@ -1052,7 +1064,7 @@
                                         <span class="material-symbols-outlined text-cyan-400 text-lg">data_object</span>
                                         <h3 class="font-headline text-xs font-bold uppercase tracking-widest">Technical Fields</h3>
                                     </div>
-                                    <p class="text-zinc-500 text-[9px] font-mono tracking-tight uppercase">3D 繚 COMPOSITING 繚 PHOTO 繚 MOTION</p>
+                                    <p class="text-zinc-500 text-[9px] font-mono tracking-tight uppercase">3D // COMPOSITING // PHOTO // MOTION</p>
                                 </div>
 
                                 <div class="side-pad group">
@@ -1081,12 +1093,12 @@
                                     </div>
 
                                     <div class="card-main py-4 flex items-center gap-4 border-b border-white/5 pb-6">
-                                        <div class="w-20 h-20 shrink-0 grayscale border border-white/10 overflow-hidden rounded-sm">
-                                            <img alt="PJ WANG" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPqeuH6eZJElfNG60_vtVMU204DgykT-G1LqXRWkzr1j9DVnhX0ACK3tVUfm26p1WoOqhJh1c4xzswsw9hEJPj4s425gwQ8bRguPWIMmTfBptpy2Qw1HMGJvwoJuIV52k-hRFj-NP5pW93Zqqn-P7PShxeEfwJkIi0il28BtMOVaAqbMIiOFmmJ23nL_dxXeKOMisxfgU4bG8ZZ98f4eRiijQTGzaPpEA64htpv26ld6jpNSWaOZUQKKnQsIOepFfUog4cNA7vBtI"/>
+                                        <div class="w-20 h-20 shrink-0 border border-white/10 overflow-hidden rounded-sm">
+                                            <img alt="PJ WANG" class="w-full h-full object-cover" src="images/PJWANG.png"/>
                                         </div>
                                         <div class="flex flex-col text-left">
                                             <p class="text-zinc-500 font-mono text-[8px] tracking-[0.1em] uppercase mb-1">AEVUM STUDIO Founder</p>
-                                            <h3 class="font-headline text-2xl font-black uppercase tracking-tighter text-white">PJ WANG</h3>
+                                            <h3 class="font-headline text-2xl font-black uppercase tracking-tighter text-white">P.J. WANG</h3>
                                         </div>
                                     </div>
 
@@ -1398,8 +1410,8 @@
                 starSpeed: 0.3,
                 density: 1.2,
                 hueShift: 180,
-                saturation: 0.5,
-                glowIntensity: 0.4,
+                saturation: 0.8,
+                glowIntensity: 0.5,
                 transparent: true
             });
         }

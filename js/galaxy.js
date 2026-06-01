@@ -88,7 +88,7 @@
         float d       = length(gv);
         float star    = 0.005 / d * fade * twinkle;
 
-        float hue = fract(h + uHueShift / 360.0);
+        float hue = fract(uHueShift / 360.0 + (h - 0.5) * 0.25);
         vec3 col  = hsv2rgb(vec3(hue, uSaturation, 1.0));
 
         finalColor += star * col * uDensity;
@@ -268,6 +268,9 @@
         if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
         const ext = gl.getExtension('WEBGL_lose_context');
         if (ext) ext.loseContext();
+      },
+      updateOptions(newOpts) {
+        opts = Object.assign(opts, newOpts);
       }
     };
   }
