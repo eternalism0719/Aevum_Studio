@@ -2983,3 +2983,25 @@ h1.large-title {
     90% { opacity: 0.5; }
     100% { top: 100%; opacity: 0; }
 }
+
+@media (max-width: 768px) {
+    .hero {
+        flex-direction: column;
+        justify-content: flex-end;
+    }
+    .hero-overlay {
+        margin-top: auto;
+        margin-bottom: auto;
+    }
+    .scroll-indicator {
+        position: relative;
+        bottom: 0;
+        left: 0;
+        transform: none;
+        margin-bottom: 20px;
+        height: 15vh;
+    }
+    .scroll-bar {
+        height: 70%;
+    }
+}
