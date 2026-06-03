@@ -1,60 +1,60 @@
-/* ============================================================
-   AINA VISUALS — main.js v3.0
+﻿/* ============================================================
+   AINA VISUALS ??main.js v3.0
    ============================================================ */
 
 /* ------ Project Data ------ */
 const projects = [
     {
         id: 1,
-        title: "凱基銀行 2024",
-        role: "Modeling · Material · Animation · Lighting · Compositing",
-        description: "擔任 3D 動畫組長，全權負責 360 度場景建構、硬表面建模與材質動態設定。",
+        title: "?勗?銵?2024",
+        role: "Modeling 繚 Material 繚 Animation 繚 Lighting 繚 Compositing",
+        description: "?遙 3D ?蝯嚗甈?鞎?360 摨血?臬遣瑽′銵券撱箸芋??鞈芸??身摰?,
         video: "https://vimeo.com/1178407017?fl=tl&fe=ec",
-        thumbnail: "images/凱基銀行.png",
+        thumbnail: "images/?勗?銵?png",
         orientation: "landscape",
         tags: ["BLENDER", "AE"],
         category: "blender ae"
     },
     {
         id: 2,
-        title: "大金空調 100年",
-        role: "Modeling · Particle Sim · Lighting · Compositing",
-        description: "參與百年紀念影片製作，負責高精度產品還原建模與複雜的粒子動態模擬統籌。",
+        title: "憭折?蝛箄矽 100撟?,
+        role: "Modeling 繚 Particle Sim 繚 Lighting 繚 Compositing",
+        description: "???曉僑蝝敹萄蔣?ˊ雿?鞎痊擃移摨衣???遣璅∟?銴???摮??芋?祉絞蝐?,
         video: "https://vimeo.com/1178406852?fl=tl&fe=ec",
-        thumbnail: "images/大金空調.png",
+        thumbnail: "images/憭折?蝛箄矽.png",
         orientation: "landscape",
         tags: ["BLENDER"],
         category: "blender"
     },
     {
         id: 3,
-        title: "麥當勞歡樂送系列",
-        role: "MOTION GRAPHIC · COMPOSITING",
-        description: "重新構思當季新品之動態影像（MG），統籌視覺節奏編排與配樂音效合成。",
+        title: "暻亦?迭璅頂??,
+        role: "MOTION GRAPHIC 繚 COMPOSITING",
+        description: "?瑽摮?????敶勗?嚗G嚗?蝯梁?閬死蝭憟楊?????單?????,
         video: "https://vimeo.com/1178406993?fl=tl&fe=ec",
-        thumbnail: "images/麥當勞.png",
+        thumbnail: "images/暻亦??png",
         orientation: "landscape",
         tags: ["MG", "AE"],
         category: "mg ae"
     },
     {
         id: 4,
-        title: "蘭諾 Lenor 衣物芳香豆",
-        role: "CLOTH SIMULATION · PARTICLE SIMULATION · LIGHTING · COMPOSITING",
-        description: "主導產品展示動畫與視覺特效，涵蓋擬真的布料動力學模擬、粒子控制與畫面調色。",
+        title: "?剛姥 Lenor 銵??喲?鞊?,
+        role: "CLOTH SIMULATION 繚 PARTICLE SIMULATION 繚 LIGHTING 繚 COMPOSITING",
+        description: "銝餃??Ｗ?撅內???閬箇??瘨菔??祉??????飛璅⊥??摮?嗉??恍隤輯??,
         video: "https://vimeo.com/1178406922?fl=tl&fe=ec",
-        thumbnail: "images/蘭諾_Lenor.png",
+        thumbnail: "images/?剛姥_Lenor.png",
         orientation: "landscape",
         tags: ["BLENDER"],
         category: "blender"
     },
     {
         id: 5,
-        title: "7-11 寶可夢 Pokémon",
-        role: "MOTION GRAPHIC · COMPOSITING",
-        description: "配合寶可夢聯名商品宣傳，將 IP 角色結合視覺，製作獨特漫畫風格之高動態 MG 影像。",
+        title: "7-11 撖嗅憭?Pok矇mon",
+        role: "MOTION GRAPHIC 繚 COMPOSITING",
+        description: "??撖嗅憭Ｚ???恐?喉?撠?IP 閫蝯?閬死嚗ˊ雿?寞憤?恍◢?潔?擃???MG 敶勗???,
         video: "https://vimeo.com/1178406654?fl=tl&fe=ec",
-        thumbnail: "images/7-11_寶可夢.png",
+        thumbnail: "images/7-11_撖嗅憭?png",
         orientation: "portrait",
         tags: ["AE"],
         category: "ae"
@@ -671,7 +671,7 @@ function initGamesLockdown() {
     const scrambleText = (el, duration = 1200) => {
         if (!el) return Promise.resolve();
         const originalText = el.innerText;
-        const chars = "!<>-_\\/[]{}—=+*^?#________0123456789";
+        const chars = "!<>-_\\/[]{}??+*^?#________0123456789";
         const frameRate = 60;
         const totalFrames = (duration / 1000) * frameRate;
         let frame = 0;

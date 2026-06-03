@@ -6,6 +6,7 @@
 @font-face {
     font-family: 'Anson';
     src: url('../fonts/Anson.ttf') format('truetype');
+    font-display: swap;
 }
 
 /* ------ CSS Variables ------ */

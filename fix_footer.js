@@ -8,7 +8,7 @@ const correctFooter =     <footer class="site-footer" id="contact">
             <div class="footer-top">
                 <div class="footer-brand">
                     <div class="footer-logo">
-                        <img src="images/PJ_LOGO.png" alt="Aevum Studio Logo" class="footer-logo-img">
+                        <img src="images/PJ_LOGO_s.webp" alt="Aevum Studio Logo" class="footer-logo-img">
                         AEVUM <span>STUDIO</span>
                     </div>
                     <div class="footer-location">

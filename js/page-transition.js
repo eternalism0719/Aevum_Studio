@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AINA VISUALS - Jagged Noise Sand Engine
  * Features: Fractal Masking, Randomized Triggering (Musgrave Style), and Lingering Dust.
  */

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AINA VISUALS - V4 Abstract Soul Dust (INCOMING MODE)
  * Behavior: Click -> Immediate Redirect. Next Page -> Shatter (reveals content).
  */
@@ -170,7 +170,7 @@
             }
             if (colors.length > 10) palette = colors;
         };
-        img.src = '../images/system_page.png';
+        // img.src = '../images/system_page.png'; // temporarily disabled to save 2.2MB
     })();
 
     function resize() {

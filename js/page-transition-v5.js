@@ -1,4 +1,4 @@
-/**
+﻿/**
  * PAGE-TRANSITION-V6.2 (Cinematic Kinetic Engine - GOLD STATE)
  * ----------------------------------------------------------------
  * [Physics] Clustered Particle Physics (Shatter -> Orbit -> Absorb)

@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   const themeConfig = {
     gallery: {
       title: "Gallery Mode",

@@ -1,4 +1,4 @@
-// Three.js 3D Model Viewer Logic
+﻿// Three.js 3D Model Viewer Logic
 let scene, camera, renderer, model;
 
 function init3D() {

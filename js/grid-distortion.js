@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Depression Gravity Well - CyberVFX
  * Simulates a 3D dent/hole in a 2D grid.
  */

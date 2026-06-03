@@ -1,24 +1,24 @@
-/**
+﻿/**
  * AEVUM STUDIO - Page Enter VFX
- * 處理從上一頁黑洞轉場過來的「入場波紋與折射」特效 (Gradient Refraction Prism)
+ * ??敺?銝??瘣??湧?靘???湔郭蝝??????(Gradient Refraction Prism)
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
-    // 檢查是否有從轉場過來的參數
+    // 瑼Ｘ?臬??頧??????
     const urlParams = new URLSearchParams(window.location.search);
     if (!urlParams.has('from_transition')) return;
 
-    // 清除 URL 參數，保持網址列乾淨
+    // 皜 URL ?嚗??雯??嗾瘛?
     const newUrl = window.location.pathname;
     window.history.replaceState({}, document.title, newUrl);
 
-    // 取得黑洞爆炸的原始座標，若無則預設為畫面正中央
+    // ??暺????憪漣璅??亦??閮剔?恍甇?葉憭?
     const expX = urlParams.has('bh_x') ? parseInt(urlParams.get('bh_x')) : window.innerWidth / 2;
     const expY = urlParams.has('bh_y') ? parseInt(urlParams.get('bh_y')) : window.innerHeight / 2;
 
-    // 延遲一下確保 DOM 完全準備好
+    // 撱園銝銝Ⅱ靽?DOM 摰皞?憟?
     setTimeout(async () => {
-        // 動態載入 PixiJS & Filters
+        // ??頛 PixiJS & Filters
         if (typeof PIXI === 'undefined') {
             await loadScript("https://unpkg.com/pixi.js@8.x/dist/pixi.min.js");
             await loadScript("https://unpkg.com/pixi-filters@6.x/dist/pixi-filters.js");
@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }, 100);
 });
 
-// 動態載入 script 的 helper
+// ??頛 script ??helper
 function loadScript(src) {
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
@@ -40,33 +40,33 @@ function loadScript(src) {
 }
 
 async function startEntranceVFX(x, y) {
-    // 創建全螢幕、背景完全透明的 Pixi App
+    // ?萄遣?刻撟??臬??券???Pixi App
     const app = new PIXI.Application();
     await app.init({
         width: window.innerWidth,
         height: window.innerHeight,
-        backgroundAlpha: 0, // 透明背景
+        backgroundAlpha: 0, // ???
         resizeTo: window,
         preference: 'webgl'
     });
     
-    // 設定高 z-index 並設為 pointer-events: none 確保不阻擋滑鼠操作
+    // 閮剖?擃?z-index 銝西身??pointer-events: none 蝣箔?銝??曌?雿?
     app.canvas.style.position = 'fixed';
     app.canvas.style.top = '0';
     app.canvas.style.left = '0';
     app.canvas.style.pointerEvents = 'none';
-    app.canvas.style.zIndex = '999998'; // 放在轉場黑洞底下或UI之上
+    app.canvas.style.zIndex = '999998'; // ?曉頧暺?摨??I銋?
     document.body.appendChild(app.canvas);
 
     const uiContainer = new PIXI.Container();
     app.stage.addChild(uiContainer);
 
-    // 空間扭曲濾鏡
+    // 蝛粹??剜瞈暸
     const shockwaveOptions = {
         center: { x, y },
         amplitude: 80, 
         wavelength: 400, 
-        speed: 600,  // 減緩空間扭曲波紋的擴散速度
+        speed: 600,  // 皜楨蝛粹??剜瘜Ｙ????漲
         brightness: 1.2,
         radius: -1,
         time: 0
@@ -74,7 +74,7 @@ async function startEntranceVFX(x, y) {
     const shockwaveFilter = new PIXI.filters.ShockwaveFilter(shockwaveOptions);
     app.stage.filters = [shockwaveFilter];
 
-    // 製作完美的漸層折射紋理
+    // 鋆賭?摰??撓撅斗?撠???
     function createRingTexture(radius) {
         const padding = 10;
         const canvas = document.createElement('canvas');
@@ -125,7 +125,7 @@ async function startEntranceVFX(x, y) {
     uiContainer.addChild(spriteGreen);
     uiContainer.addChild(spriteBlue);
 
-    // 光束火花
+    // ???怨
     const sparkContainer = new PIXI.Container();
     uiContainer.addChild(sparkContainer);
     const activeSparks = [];
@@ -151,15 +151,15 @@ async function startEntranceVFX(x, y) {
         sparkContainer.addChild(spark);
         activeSparks.push({
             sprite: spark,
-            vx: Math.cos(angle) * velocity * 0.5, // 火花初速減緩
+            vx: Math.cos(angle) * velocity * 0.5, // ?怨??蝺?
             vy: Math.sin(angle) * velocity * 0.5,
             life: 1.0, 
-            decayRate: 0.8 + Math.random() * 1.2 // 火花消散速度減緩，停留更久
+            decayRate: 0.8 + Math.random() * 1.2 // ?怨瘨?漲皜楨嚗??銋?
         });
     }
 
     let expTime = 0;
-    const maxTime = 2.5; // 總動畫時間延長，讓光環擴展變慢
+    const maxTime = 2.5; // 蝮賢??急??辣?瘀?霈??唳撅???
 
     function easeOutExpo(t) {
         return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
@@ -175,11 +175,11 @@ async function startEntranceVFX(x, y) {
         
         let easeOut = easeOutExpo(progress);
 
-        // 空間扭曲
+        // 蝛粹??剜
         shockwaveFilter.time += dt;
         shockwaveFilter.amplitude = 80 * (1 - progress); 
 
-        // 漸層折射環
+        // 瞍詨惜????
         const baseScale = easeOut * 12;
         const masterAlpha = 0.5 * (1 - Math.pow(progress, 1.5));
         
@@ -191,7 +191,7 @@ async function startEntranceVFX(x, y) {
         spriteGreen.alpha = masterAlpha;
         spriteBlue.alpha = masterAlpha;
 
-        // 星屑射線
+        // ??撠?
         for(let i = activeSparks.length - 1; i >= 0; i--) {
             let s = activeSparks[i];
             s.life -= dt * s.decayRate;
@@ -211,7 +211,7 @@ async function startEntranceVFX(x, y) {
             s.sprite.scale.x = s.life; 
         }
 
-        // 動畫結束，銷毀並釋放記憶體
+        // ?蝯?嚗瘥銝阡??曇??園?
         if (progress >= 1) {
             ticker.stop();
             app.destroy(true, { children: true, texture: true, baseTexture: true });

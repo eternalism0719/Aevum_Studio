@@ -1,5 +1,5 @@
-/**
- * Galaxy Background — Vanilla JS implementation
+﻿/**
+ * Galaxy Background ??Vanilla JS implementation
  * Shader ported from reactbits.dev/backgrounds/galaxy (exact GLSL match)
  *
  * Usage:
@@ -10,7 +10,7 @@
 (function (global) {
   'use strict';
 
-  // ─── EXACT shaders from reactbits.dev ──────────────────────────────────────
+  // ??? EXACT shaders from reactbits.dev ??????????????????????????????????????
 
   const VERT = `
     attribute vec2 uv;
@@ -106,7 +106,7 @@
     }
   `;
 
-  // ─── Raw WebGL helpers ──────────────────────────────────────────────────────
+  // ??? Raw WebGL helpers ??????????????????????????????????????????????????????
 
   function compileShader(gl, type, src) {
     const s = gl.createShader(type);
@@ -135,8 +135,8 @@
   }
 
   /**
-   * Full-screen triangle: covers clip-space [-1,1]² with a single triangle.
-   * Interleaved layout: [posX, posY, uvX, uvY] × 3 vertices
+   * Full-screen triangle: covers clip-space [-1,1]簡 with a single triangle.
+   * Interleaved layout: [posX, posY, uvX, uvY] ? 3 vertices
    */
   function createTriangleBuffer(gl) {
     const buf = gl.createBuffer();
@@ -149,7 +149,7 @@
     return buf;
   }
 
-  // ─── Public API ─────────────────────────────────────────────────────────────
+  // ??? Public API ?????????????????????????????????????????????????????????????
 
   function initGalaxy(container, opts) {
     opts = Object.assign({
@@ -167,7 +167,7 @@
       speed:               1.0,
     }, opts);
 
-    // ── Canvas setup ──
+    // ?? Canvas setup ??
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;';
     container.style.position = container.style.position || 'relative';
@@ -176,7 +176,7 @@
     const gl = canvas.getContext('webgl', { alpha: false, premultipliedAlpha: false, antialias: false });
     if (!gl) { console.error('[Galaxy] WebGL not supported'); return { destroy: () => {} }; }
 
-    // ── Compile shaders ──
+    // ?? Compile shaders ??
     const prog = createProgram(gl);
     if (!prog) return { destroy: () => {} };
 
@@ -191,10 +191,10 @@
        uLocs[n] = gl.getUniformLocation(prog, n);
      });
 
-    // ── State ──
+    // ?? State ??
     let mouseX = 0, mouseY = 0, animId;
 
-    // ── Resize ──
+    // ?? Resize ??
     function resize() {
       const w = container.offsetWidth  || window.innerWidth;
       const h = container.offsetHeight || window.innerHeight;
@@ -203,7 +203,7 @@
       gl.viewport(0, 0, w, h);
     }
 
-    // ── Mouse tracking (matches React component's coordinate mapping) ──
+    // ?? Mouse tracking (matches React component's coordinate mapping) ??
     function onMouseMove(e) {
       if (!opts.mouseInteraction) return;
       const rect = container.getBoundingClientRect();
@@ -214,7 +214,7 @@
       mouseY = (0.5 - (e.clientY - rect.top)  / rh) * (rh / mn);
     }
 
-    // ── Render loop ──
+    // ?? Render loop ??
     function render(t) {
       const time = t * 0.001;
 
@@ -245,7 +245,7 @@
       animId = requestAnimationFrame(render);
     }
 
-    // ── Wire up events ──
+    // ?? Wire up events ??
     window.addEventListener('resize', resize);
     window.addEventListener('mousemove', onMouseMove);
     resize();
