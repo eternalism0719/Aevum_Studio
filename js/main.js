@@ -10,7 +10,7 @@ const projects = [
         role: "Modeling · Material · Animation · Lighting · Compositing",
         description: "擔任 3D 動畫組長，全權負責 360 度場景建構、硬表面建模與材質動態設定。",
         video: "https://vimeo.com/1178407017?fl=tl&fe=ec",
-        thumbnail: "images/凱基銀行.png",
+        thumbnail: "images/凱基銀行_s.webp",
         orientation: "landscape",
         tags: ["BLENDER", "AE"],
         category: "blender ae"
@@ -21,7 +21,7 @@ const projects = [
         role: "Modeling · Particle Sim · Lighting · Compositing",
         description: "參與百年紀念影片製作，負責高精度產品還原建模與複雜的粒子動態模擬統籌。",
         video: "https://vimeo.com/1178406852?fl=tl&fe=ec",
-        thumbnail: "images/大金空調.png",
+        thumbnail: "images/大金空調_s.webp",
         orientation: "landscape",
         tags: ["BLENDER"],
         category: "blender"
@@ -32,7 +32,7 @@ const projects = [
         role: "MOTION GRAPHIC · COMPOSITING",
         description: "重新構思當季新品之動態影像（MG），統籌視覺節奏編排與配樂音效合成。",
         video: "https://vimeo.com/1178406993?fl=tl&fe=ec",
-        thumbnail: "images/麥當勞.png",
+        thumbnail: "images/麥當勞_s.webp",
         orientation: "landscape",
         tags: ["MG", "AE"],
         category: "mg ae"
@@ -43,7 +43,7 @@ const projects = [
         role: "CLOTH SIMULATION · PARTICLE SIMULATION · LIGHTING · COMPOSITING",
         description: "主導產品展示動畫與視覺特效，涵蓋擬真的布料動力學模擬、粒子控制與畫面調色。",
         video: "https://vimeo.com/1178406922?fl=tl&fe=ec",
-        thumbnail: "images/蘭諾_Lenor.png",
+        thumbnail: "images/蘭諾_Lenor_s.webp",
         orientation: "landscape",
         tags: ["BLENDER"],
         category: "blender"
@@ -54,7 +54,7 @@ const projects = [
         role: "MOTION GRAPHIC · COMPOSITING",
         description: "配合寶可夢聯名商品宣傳，將 IP 角色結合視覺，製作獨特漫畫風格之高動態 MG 影像。",
         video: "https://vimeo.com/1178406654?fl=tl&fe=ec",
-        thumbnail: "images/7-11_寶可夢.png",
+        thumbnail: "images/7-11_寶可夢_s.webp",
         orientation: "portrait",
         tags: ["AE"],
         category: "ae"
@@ -94,7 +94,7 @@ function initGallery() {
                     vimeoId = matches[1];
                 }
             }
-            mediaHtml = `<img id="vimeo-thumb-${project.id}" src="${project.thumbnail}" alt="${project.title} thumbnail" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index:0; background:#111;">`;
+            mediaHtml = `<img id="vimeo-thumb-${project.id}" src="${project.thumbnail}" alt="${project.title} thumbnail" style="width:100%; height:100%; object-fit:cover; position:absolute; top:0; left:0; z-index:0; background:#111;" loading="lazy">`;
         } else {
             mediaHtml = `
                 <video muted loop playsinline preload="none">
@@ -130,18 +130,6 @@ function initGallery() {
 
         grid.appendChild(card);
 
-        // Fetch Vimeo thumbnail dynamically if needed
-        if (isVimeo && vimeoId) {
-            fetch(`https://vimeo.com/api/v2/video/${vimeoId}.json`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data && data[0] && data[0].thumbnail_large) {
-                        const img = document.getElementById(`vimeo-thumb-${project.id}`);
-                        if (img) img.src = data[0].thumbnail_large;
-                    }
-                })
-                .catch(err => console.log('Vimeo thumb fetch error:', err));
-        }
     });
 
     // Trigger reveal for already-visible cards
@@ -511,7 +499,11 @@ window.addEventListener('load', () => {
     if (sessionStorage.getItem('vfx-loader-done')) {
         if (preloader) preloader.style.display = 'none';
         const heroVideo = document.getElementById('hero-video');
-        heroVideo?.play().catch(() => {});
+        if (heroVideo && typeof heroVideo.play === 'function') {
+            heroVideo.play().catch(() => {});
+        } else if (heroVideo && window.Vimeo && window.Vimeo.Player) {
+            new window.Vimeo.Player(heroVideo).play().catch(() => {});
+        }
         return;
     }
 
@@ -528,9 +520,13 @@ window.addEventListener('load', () => {
         setTimeout(() => {
             preloader.classList.add('fade-out');
             const heroVideo = document.getElementById('hero-video');
-            heroVideo?.play().catch(() => {});
+            if (heroVideo && typeof heroVideo.play === 'function') {
+                heroVideo.play().catch(() => {});
+            } else if (heroVideo && window.Vimeo && window.Vimeo.Player) {
+                new window.Vimeo.Player(heroVideo).play().catch(() => {});
+            }
             sessionStorage.setItem('vfx-loader-done', 'true');
-        }, 3200);
+        }, 3000);
     }
 });
 
