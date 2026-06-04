@@ -47,13 +47,13 @@ CHANGE LOG & VERSION HISTORY
 2. 具體改動內容：
    - 【貼圖載入器與格式重構】：
      * 將 `ROCK_MOSS` 的貼圖路徑改為轉換後的 1024x1024 PNG 貼圖：
-       - Base Color (map): `./3D_shader/rock_moss/rock_moss_base_color.png`
-       - Roughness (roughnessMap): `./3D_shader/rock_moss/rock_moss_rough.png`
-       - Normal (normalMap): `./3D_shader/rock_moss/rock_moss_normal.png`
+       - Base Color (map): `./3D_shader//.webp`
+       - Roughness (roughnessMap): `./3D_shader//.webp`
+       - Normal (normalMap): `./3D_shader//.webp`
      * 將 `WOOD` 的貼圖路徑改為轉換後的 1024x1024 PNG 貼圖：
-       - Base Color (map): `./3D_shader/wood/wood_base_color.png`
-       - Roughness (roughnessMap): `./3D_shader/wood/wood_rough.png`
-       - Normal (normalMap): `./3D_shader/wood/wood_normal.png`
+       - Base Color (map): `./3D_shader//.webp`
+       - Roughness (roughnessMap): `./3D_shader//.webp`
+       - Normal (normalMap): `./3D_shader//.webp`
      * 因為所有的貼圖均已轉換為 8-bit PNG 格式，因此將原本用來加載 .exr 的 `exrLoader.load` 全部更改為標準且高效的 `texLoader.load`。
      * 大幅簡化了 PBR 貼圖的加載邏輯，使載入與解析速度獲得顯著的效能提升。
 
@@ -210,7 +210,7 @@ CHANGE LOG & VERSION HISTORY
             inset: 0;
             z-index: 1;
             /* 背景圖移至此處，並套用濾鏡消除灰霧感 */
-            background-image: url('./3D_reference/3D_lab_black_BG.png');
+            background-image: url('./3D_reference/3D_lab_.webp');
             background-size: cover;
             background-position: center;
             transition: background-image 0.5s ease;
@@ -218,7 +218,7 @@ CHANGE LOG & VERSION HISTORY
         }
 
         [data-theme="light"] #bg-image-layer {
-            background-image: url('./3D_reference/3D_lab_white_BG.png');
+            background-image: url('./3D_reference/3D_lab_.webp');
             filter: none; /* 亮色版通常不需要去灰霧 */
         }
 
@@ -984,7 +984,7 @@ CHANGE LOG & VERSION HISTORY
     <header class="glass-nav" id="main-nav">
         <div class="nav-left-wrap">
             <a href="index.html" class="logo" aria-label="Aevum Studio Home">
-                <img src="images/LOGO_pj_BG.png" alt="" class="logo-img">
+                <img src="images/LOGO_pj_BG_s.webp" width="138" height="32" alt="" class="logo-img">
                 AEVUM <span>STUDIO</span>
                 <div class="logo-pulse"></div>
             </a>
@@ -1140,11 +1140,11 @@ CHANGE LOG & VERSION HISTORY
         <div id="video-bg-container">
             <!-- Dark Mode Video -->
             <video id="bg-video-dark" class="bg-video-layer" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover; object-position: right center; transform: scale(0.68); transform-origin: right center; z-index: 1;">
-                <source src="./videos/background/Space_travel_animation_web.mp4" type="video/mp4">
+                <source src="./videos/background/Space_travel_animation_web_normal.webm" type="video/webm">
             </video>
             <!-- Light Mode Video -->
             <video id="bg-video-light" class="bg-video-layer" autoplay loop muted playsinline style="width: 100%; height: 100%; object-fit: cover; object-position: right center; transform: scale(0.68); transform-origin: right center; z-index: 1;">
-                <source src="./videos/background/Space_travel_animation_web_normal.mp4" type="video/mp4">
+                <source src="./videos/background/Space_travel_animation_web_normal.webm" type="video/webm">
             </video>
         </div>
 
@@ -1468,9 +1468,9 @@ CHANGE LOG & VERSION HISTORY
                 color: '#ffffff', effectColor: '#8da373', transmission: 0.0, ior: 1.5, thickness: 0.0, roughness: 1.0, metalness: 0.0, envMapIntensity: 0.5, iridescence: 0.0, iridescenceIOR: 1.3, attenuationColor: '#ffffff', attenuationDistance: Infinity, isToon: false,
                 clearcoat: 0.0, clearcoatRoughness: 1.0,
                 pbr: {
-                    baseColor: './3D_shader/rock_moss/rock_moss_base_color.png',
-                    roughnessMap: './3D_shader/rock_moss/rock_moss_rough.png',
-                    normalMap: './3D_shader/rock_moss/rock_moss_normal.png',
+                    baseColor: './3D_shader//.webp',
+                    roughnessMap: './3D_shader//.webp',
+                    normalMap: './3D_shader//.webp',
                     normalScale: [3.5, 3.5],
                     repeat: [1.5, 1.5]
                 }
@@ -1481,9 +1481,9 @@ CHANGE LOG & VERSION HISTORY
                 color: '#ffffff', effectColor: '#d4a373', transmission: 0.0, ior: 1.5, thickness: 0.0, roughness: 1.0, metalness: 0.0, envMapIntensity: 0.5, iridescence: 0.0, iridescenceIOR: 1.3, attenuationColor: '#ffffff', attenuationDistance: Infinity, isToon: false,
                 clearcoat: 0.0, clearcoatRoughness: 1.0,
                 pbr: {
-                    baseColor: './3D_shader/wood/wood_base_color.png',
-                    roughnessMap: './3D_shader/wood/wood_rough.png',
-                    normalMap: './3D_shader/wood/wood_normal.png',
+                    baseColor: './3D_shader//.webp',
+                    roughnessMap: './3D_shader//.webp',
+                    normalMap: './3D_shader//.webp',
                     normalScale: [3.0, 3.0],
                     repeat: [1.5, 1.5]
                 }
@@ -2184,7 +2184,7 @@ CHANGE LOG & VERSION HISTORY
             }
         }
 
-        texLoader.load('./3D_reference/3D_lab_black_BG.png', (tex) => {
+        texLoader.load('./3D_reference/3D_lab_.webp', (tex) => {
             tex.colorSpace = THREE.SRGBColorSpace;
             darkBgFlat = tex.clone();
             darkBgFlat.needsUpdate = true;
@@ -2199,7 +2199,7 @@ CHANGE LOG & VERSION HISTORY
             }
         });
 
-        texLoader.load('./3D_reference/3D_lab_white_BG.png', (tex) => {
+        texLoader.load('./3D_reference/3D_lab_.webp', (tex) => {
             tex.colorSpace = THREE.SRGBColorSpace;
             lightBgFlat = tex.clone();
             lightBgFlat.needsUpdate = true;
@@ -2216,7 +2216,7 @@ CHANGE LOG & VERSION HISTORY
 
         // 載入原本的 HDRI (monochrome) 提供非 PBR 材質環境反射
         const rgbeLoader = new RGBELoader();
-        rgbeLoader.load('./3D_reference/monochrome_studio_01_4k.hdr', (tex) => {
+        rgbeLoader.load('./images/monochrome_studio_02_1k.hdr', (tex) => {
             tex.mapping = THREE.EquirectangularReflectionMapping;
             hdriTexture = tex;
             updateEnvironmentMap();
