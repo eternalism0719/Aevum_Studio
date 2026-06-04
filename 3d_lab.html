@@ -247,7 +247,8 @@ CHANGE LOG & VERSION HISTORY
             overflow: hidden;
             mask-image: linear-gradient(to right, transparent, black 40%);
             -webkit-mask-image: linear-gradient(to right, transparent, black 40%);
-            transition: opacity 0.5s ease;
+            opacity: 0;
+            transition: opacity 1.5s ease;
             pointer-events: none;
         }
 
@@ -2929,6 +2930,16 @@ CHANGE LOG & VERSION HISTORY
             }, { passive: true });
         }
         initNavScroll();
+
+        // 優先載入 Matte，影片延後顯示
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const vidContainer = document.getElementById('video-bg-container');
+                if (vidContainer) {
+                    vidContainer.style.opacity = '1';
+                }
+            }, 600); // 給予渲染緩衝時間，避免閃爍
+        });
 
     </script>
 </body>
