@@ -1,4 +1,4 @@
-# AEVUM STUDIO — Portfolio Changelog
+## [2026-06-04] 3d_lab 終極材質與資源壓縮優化 (Branch: 3d_lab_optimization)\n\n### 1. 3D PBR 材質與參考圖全面 WebP 化\n- **問題**：3D_shader/ 底下的材質貼圖與 3D_reference/ 背景圖原本皆為肥大的 PNG 格式，合計逼近 8MB。\n- **改動**：使用 sharp 將總計 8 張巨型 PNG 材質轉檔為 .webp。總大小暴跌至 1.3MB，大幅縮短 DefaultLoadingManager 載入時間。並在 3d_lab.html 中同步更新路徑。\n\n### 2. 環境光 (HDR) 降階優化\n- **問題**：原 4K 的環境光高達 18.3 MB，是 LCP 延遲的最大兇手。\n- **改動**：替換為 1K 版的 .hdr (約 1.5MB)，砍掉 16MB 頻寬消耗。\n\n### 3. 背景影片瘦身\n- **問題**：背景動畫原本使用 10MB 的 MP4。\n- **改動**：將雙模式的背景影片皆統一修改為新版的 .webm，大幅縮減了動畫傳輸大小。\n\n---\n\n# AEVUM STUDIO — Portfolio Changelog
 
 格式說明：每筆記錄包含異動檔案、行號、以及完整 before/after 程式碼片段，可直接用於還原。
 
