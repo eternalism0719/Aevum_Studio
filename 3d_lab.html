@@ -210,7 +210,7 @@ CHANGE LOG & VERSION HISTORY
             inset: 0;
             z-index: 1;
             /* 背景圖移至此處，並套用濾鏡消除灰霧感 */
-            background-image: url('./3D_reference/3D_lab_.webp');
+            background-image: url('./3D_reference/3D_lab_black_BG.webp');
             background-size: cover;
             background-position: center;
             transition: background-image 0.5s ease;
@@ -218,7 +218,7 @@ CHANGE LOG & VERSION HISTORY
         }
 
         [data-theme="light"] #bg-image-layer {
-            background-image: url('./3D_reference/3D_lab_.webp');
+            background-image: url('./3D_reference/3D_lab_white_BG.webp');
             filter: none; /* 亮色版通常不需要去灰霧 */
         }
 
@@ -1468,9 +1468,9 @@ CHANGE LOG & VERSION HISTORY
                 color: '#ffffff', effectColor: '#8da373', transmission: 0.0, ior: 1.5, thickness: 0.0, roughness: 1.0, metalness: 0.0, envMapIntensity: 0.5, iridescence: 0.0, iridescenceIOR: 1.3, attenuationColor: '#ffffff', attenuationDistance: Infinity, isToon: false,
                 clearcoat: 0.0, clearcoatRoughness: 1.0,
                 pbr: {
-                    baseColor: './3D_shader//.webp',
-                    roughnessMap: './3D_shader//.webp',
-                    normalMap: './3D_shader//.webp',
+                    baseColor: './3D_shader/rock_moss/rock_moss_base_color.webp',
+                    roughnessMap: './3D_shader/rock_moss/rock_moss_rough.webp',
+                    normalMap: './3D_shader/rock_moss/rock_moss_normal.webp',
                     normalScale: [3.5, 3.5],
                     repeat: [1.5, 1.5]
                 }
@@ -1481,9 +1481,9 @@ CHANGE LOG & VERSION HISTORY
                 color: '#ffffff', effectColor: '#d4a373', transmission: 0.0, ior: 1.5, thickness: 0.0, roughness: 1.0, metalness: 0.0, envMapIntensity: 0.5, iridescence: 0.0, iridescenceIOR: 1.3, attenuationColor: '#ffffff', attenuationDistance: Infinity, isToon: false,
                 clearcoat: 0.0, clearcoatRoughness: 1.0,
                 pbr: {
-                    baseColor: './3D_shader//.webp',
-                    roughnessMap: './3D_shader//.webp',
-                    normalMap: './3D_shader//.webp',
+                    baseColor: './3D_shader/wood/wood_base_color.webp',
+                    roughnessMap: './3D_shader/wood/wood_rough.webp',
+                    normalMap: './3D_shader/wood/wood_normal.webp',
                     normalScale: [3.0, 3.0],
                     repeat: [1.5, 1.5]
                 }
@@ -2184,7 +2184,7 @@ CHANGE LOG & VERSION HISTORY
             }
         }
 
-        texLoader.load('./3D_reference/3D_lab_.webp', (tex) => {
+        texLoader.load('./3D_reference/3D_lab_black_BG.webp', (tex) => {
             tex.colorSpace = THREE.SRGBColorSpace;
             darkBgFlat = tex.clone();
             darkBgFlat.needsUpdate = true;
@@ -2199,7 +2199,7 @@ CHANGE LOG & VERSION HISTORY
             }
         });
 
-        texLoader.load('./3D_reference/3D_lab_.webp', (tex) => {
+        texLoader.load('./3D_reference/3D_lab_white_BG.webp', (tex) => {
             tex.colorSpace = THREE.SRGBColorSpace;
             lightBgFlat = tex.clone();
             lightBgFlat.needsUpdate = true;
