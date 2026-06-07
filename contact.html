@@ -350,7 +350,7 @@
             </p>
 </header>
 <!-- Form Form -->
-<form action="https://formspree.io/f/YOUR_FORMSPREE_ID" class="space-y-8" method="POST">
+<form id="contact-form" action="#" class="space-y-8" method="POST">
 <!-- Section 1: Basic Info -->
 <section class="glass-panel p-8 rounded-xl relative overflow-hidden group">
 <div class="absolute top-0 left-0 w-1 h-full bg-primary-container opacity-20 group-hover:opacity-100 transition-opacity"></div>
@@ -522,4 +522,80 @@
             body.style.backgroundPosition = `${Math.random() * 5}px ${Math.random() * 5}px`;
         }, 3000);
     </script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('contact-form');
+    if(!form) return;
+    
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const btn = form.querySelector('button[type="submit"]');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="material-symbols-outlined animate-spin inline-block">sync</span> 傳送中...';
+        btn.disabled = true;
+        
+        // 1. Get text inputs and textareas
+        const textInputs = form.querySelectorAll('input[type="text"], input[type="email"], input[type="date"], textarea');
+        
+        // 2. Get platforms (first group of checkboxes, 6 items)
+        const platformCheckboxes = Array.from(form.querySelectorAll('section:nth-of-type(2) input[type="checkbox"]:checked'))
+            .map(cb => cb.nextElementSibling.textContent.trim());
+            
+        // 3. Get styles (second group of checkboxes, 5 items)
+        const styleCheckboxes = Array.from(form.querySelectorAll('section:nth-of-type(3) input[type="checkbox"]:checked'))
+            .map(cb => cb.nextElementSibling.textContent.trim());
+            
+        // 4. Get budget radio
+        const budgetRadio = form.querySelector('input[name="budget"]:checked');
+        const budget = budgetRadio ? budgetRadio.nextElementSibling.textContent.trim() : "";
+
+        // Combine into payload
+        const data = {
+            "專案名稱": textInputs[4] ? textInputs[4].value : "",
+            "稱呼 / 單位名稱": textInputs[0] ? textInputs[0].value : "",
+            "聯絡人": textInputs[1] ? textInputs[1].value : "",
+            "信箱": textInputs[2] ? textInputs[2].value : "",
+            "方便聯絡時間": textInputs[3] ? textInputs[3].value : "",
+            "交期": textInputs[5] ? textInputs[5].value : "",
+            "投放平台": platformCheckboxes,
+            "預期風格": styleCheckboxes,
+            "預算區間": budget,
+            "參考連結": textInputs[6] ? textInputs[6].value : "",
+            "備註": textInputs[7] ? textInputs[7].value : ""
+        };
+
+        try {
+            const response = await fetch('https://hook.us2.make.com/uhkktf2193miwu5y2xckhqh4j6bafu2w', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            if(response.ok || response.status === 200 || response.status === 201) {
+                btn.innerHTML = '<span class="material-symbols-outlined inline-block">check_circle</span> 傳送成功！';
+                btn.classList.add('bg-primary', 'text-on-primary');
+                form.reset();
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('bg-primary', 'text-on-primary');
+                    btn.disabled = false;
+                }, 5000);
+            } else {
+                throw new Error('Network response was not ok');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            btn.innerHTML = '<span class="material-symbols-outlined inline-block">error</span> 傳送失敗，請重試';
+            btn.classList.add('bg-red-500', 'text-white');
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.remove('bg-red-500', 'text-white');
+                btn.disabled = false;
+            }, 3000);
+        }
+    });
+});
+</script>
 </body></html>
