@@ -281,8 +281,27 @@
             transform: scale(1.02);
         }
     </style>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/glitch.css">
 </head>
 <body class="antialiased min-h-screen flex flex-col relative">
+<header class="glass-nav" id="main-nav">
+        <div class="nav-left-wrap">
+            <a href="index.html" class="logo" aria-label="Aevum Studio Home">
+                <img src="images/LOGO_pj_BG_s.webp" width="138" height="32" alt="" class="logo-img">
+                AEVUM <span>STUDIO</span>
+                <div class="logo-pulse"></div>
+            </a>
+        </div>
+        
+        <nav id="nav-links" aria-label="Main navigation">
+            <a href="project.html" class="nav-link"><div class="nav-dot"></div>PROJECT</a>
+            <a href="brand.html" class="nav-link"><div class="nav-dot"></div>BRAND</a>
+            <a href="3d_lab.html" class="nav-link"><div class="nav-dot"></div>EXPERIMENT</a>
+            <a href="games.html" class="nav-link"><div class="nav-dot"></div>GAMES</a>
+              <a href="contact.html" class="nav-link"><div class="nav-dot"></div>CONTACT</a>
+        </nav>
+    </header>
 <!-- HUD Elements -->
 <div class="hud-corner hud-tl"></div>
 <div class="hud-corner hud-tr"></div>
@@ -316,6 +335,7 @@
 <!-- Main Content -->
 <main class="flex-grow pt-[120px] pb-section-gap px-margin-page max-w-5xl mx-auto w-full relative z-10">
 <!-- Header Section -->
+<div style="padding-top: 100px;"></div>
 <header class="mb-12 text-center md:text-left">
 <h1 class="font-display-hero text-display-hero text-primary mb-6 uppercase tracking-widest">
                 3D 特效與動態設計<br/>
@@ -330,7 +350,7 @@
             </p>
 </header>
 <!-- Form Form -->
-<form action="#" class="space-y-8" method="POST">
+<form action="https://formspree.io/f/YOUR_FORMSPREE_ID" class="space-y-8" method="POST">
 <!-- Section 1: Basic Info -->
 <section class="glass-panel p-8 rounded-xl relative overflow-hidden group">
 <div class="absolute top-0 left-0 w-1 h-full bg-primary-container opacity-20 group-hover:opacity-100 transition-opacity"></div>
