@@ -325,8 +325,8 @@
 <header class="mb-12 text-center md:text-left">
 <h1 class="font-display-hero text-3xl md:text-5xl lg:text-6xl text-primary mb-8 uppercase tracking-widest leading-tight break-keep">
     <div class="mb-4">
-        3D 特效與動態設計
-        <span class="text-lg md:text-2xl opacity-50 block mt-1 tracking-normal font-body-md uppercase">3D VFX & Motion Design</span>
+        AEVUM STUDIO
+        <span class="text-lg md:text-2xl opacity-50 block mt-1 tracking-normal font-body-md uppercase">Creative Studio</span>
     </div>
     <div class="text-primary-container">
         合作洽談預約表
@@ -524,6 +524,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('contact-form');
     if(!form) return;
     
+    // Toggle logic for 'Other' project type
+    const ptypeOtherCb = document.getElementById('ptype_other_cb');
+    const ptypeOtherInput = document.getElementById('project_type_other');
+    if (ptypeOtherCb) {
+        ptypeOtherCb.addEventListener('change', (ev) => {
+            if (ev.target.checked) {
+                ptypeOtherInput.classList.remove('hidden');
+                ptypeOtherInput.focus();
+            } else {
+                ptypeOtherInput.classList.add('hidden');
+                ptypeOtherInput.value = '';
+            }
+        });
+    }
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -532,34 +547,42 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.innerHTML = '<span class="material-symbols-outlined animate-spin inline-block">sync</span> 傳送中...';
         btn.disabled = true;
         
-        // 1. Get text inputs and textareas
-        const textInputs = form.querySelectorAll('input[type="text"], input[type="email"], input[type="date"], textarea');
-        
-        // 2. Get platforms (first group of checkboxes, 6 items)
-        const platformCheckboxes = Array.from(form.querySelectorAll('section:nth-of-type(2) input[type="checkbox"]:checked'))
-            .map(cb => cb.nextElementSibling.textContent.trim());
+        // 1. Get project types
+        let projectTypes = Array.from(form.querySelectorAll('input[name="project_type_cb"]:checked')).map(cb => cb.value);
+        if (ptypeOtherCb && ptypeOtherCb.checked && ptypeOtherInput.value.trim() !== '') {
+            // Replace '其他' with the actual text or just append it
+            projectTypes = projectTypes.filter(t => t !== '其他');
+            projectTypes.push(ptypeOtherInput.value.trim());
+        }
+
+        // 2. Get platforms
+        const platformCheckboxes = Array.from(form.querySelectorAll('section:nth-of-type(2) input[type="checkbox"]:not([name="project_type_cb"]):checked'))
+            .map(cb => cb.nextElementSibling.textContent.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim());
             
-        // 3. Get styles (second group of checkboxes, 5 items)
+        // 3. Get styles
         const styleCheckboxes = Array.from(form.querySelectorAll('section:nth-of-type(3) input[type="checkbox"]:checked'))
-            .map(cb => cb.nextElementSibling.textContent.trim());
+            .map(cb => cb.nextElementSibling.textContent.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim());
             
         // 4. Get budget radio
         const budgetRadio = form.querySelector('input[name="budget"]:checked');
-        const budget = budgetRadio ? budgetRadio.nextElementSibling.textContent.trim() : "";
+        const budget = budgetRadio ? budgetRadio.nextElementSibling.textContent.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim() : "";
 
-        // Combine into payload
+        // Collect exact IDs for robust mapping
+        const val = (id) => { const el = document.getElementById(id); return el ? el.value : ""; };
+
         const data = {
-            "專案名稱": textInputs[4] ? textInputs[4].value : "",
-            "稱呼 / 單位名稱": textInputs[0] ? textInputs[0].value : "",
-            "聯絡人": textInputs[1] ? textInputs[1].value : "",
-            "信箱": textInputs[2] ? textInputs[2].value : "",
-            "方便聯絡時間": textInputs[3] ? textInputs[3].value : "",
-            "交期": textInputs[5] ? textInputs[5].value : "",
+            "專案名稱": val('project_name'),
+            "案子類型": projectTypes,
+            "稱呼 / 單位名稱": val('client_name'),
+            "聯絡人": val('contact_person'),
+            "信箱": val('email'),
+            "方便聯絡時間": val('contact_time'),
+            "交期": val('deadline'),
             "投放平台": platformCheckboxes,
             "預期風格": styleCheckboxes,
             "預算區間": budget,
-            "參考連結": textInputs[6] ? textInputs[6].value : "",
-            "備註": textInputs[7] ? textInputs[7].value : ""
+            "參考連結": val('reference_url'),
+            "備註": val('notes')
         };
 
         try {
@@ -573,6 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.innerHTML = '<span class="material-symbols-outlined inline-block">check_circle</span> 傳送成功！';
                 btn.classList.add('bg-primary', 'text-on-primary');
                 form.reset();
+                if(ptypeOtherInput) ptypeOtherInput.classList.add('hidden');
                 setTimeout(() => {
                     btn.innerHTML = originalText;
                     btn.classList.remove('bg-primary', 'text-on-primary');
