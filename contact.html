@@ -332,9 +332,11 @@
     </div>
 </h1>
 <p class="font-body-md text-body-md text-on-surface-variant max-w-3xl mb-6 leading-loose text-pretty">
-                感謝您對 AEVUM STUDIO 的關注。為了能更精準評估您的需求並提供初步估價，請花費 2 分鐘填寫以下意向表單。收到表單後，我將於 2 個工作天內主動與您聯絡。<br>
+                感謝您對 AEVUM STUDIO 的關注。為了能更精準評估您的需求並提供初步估價，請花費 2 分鐘填寫以下意向表單。<br>
+                收到表單後，我將於 2 個工作天內主動與您聯絡。<br>
                 <span class="text-sm opacity-60 block mt-4 font-normal leading-relaxed text-pretty">
-                    Thank you for your interest in AEVUM STUDIO. To help us accurately assess your needs and provide a preliminary quote, please take 2 minutes to fill out the form below. We will contact you within 2 business days.
+                    Thank you for your interest in AEVUM STUDIO. To help us accurately assess your needs and provide a preliminary quote, please take 2 minutes to fill out the form below.<br>
+                    We will contact you within 2 business days.
                 </span>
             </p>
 <div class="font-body-md text-body-md text-text-muted flex items-start justify-center md:justify-start gap-3">
@@ -506,16 +508,50 @@
 </form>
 </main>
 <!-- Footer -->
-<footer class="w-full py-8 bg-surface-dim border-t border-outline-variant flex flex-col md:flex-row justify-between items-center px-margin-page gap-4 z-10 relative">
-<div class="font-label-data text-lg text-secondary uppercase">
-            © 2024 NEURAL_VFX SYSTEM. ALL RIGHTS RESERVED.
+<footer class="site-footer" id="contact">
+        <div class="footer-inner">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <div class="footer-logo">
+                        <img src="images/PJ_LOGO_s.webp" width="120" height="120" alt="Aevum Studio Logo" class="footer-logo-img" loading="lazy">
+                        AEVUM <span>STUDIO</span>
+                    </div>
+                    <div class="footer-location">
+                        <span class="badge-dot"></span>
+                        TAIPEI, TAIWAN // APAC
+                    </div>
+                    <p class="footer-tagline">Available for commercial work worldwide.</p>
+                </div>
+                <div class="footer-links-col">
+                    <h3 class="footer-col-title">NAVIGATE</h3>
+                    <a href="index.html" class="footer-link">Home</a>
+                    <a href="project.html" class="footer-link">Portfolio Projects</a>
+                    <a href="brand.html" class="footer-link">Brand Story</a>
+                    <a href="3d_lab.html" class="footer-link">Experiment</a>
+                    <a href="games.html" class="footer-link">Games</a>
+                </div>
+                <div class="footer-links-col">
+                    <h3 class="footer-col-title">CONTACT</h3>
+                    <a href="#" class="footer-link" onclick="navigator.clipboard.writeText('eternalframePJ@gmail.com'); alert('Copied to clipboard!'); return false;" title="Click to copy">eternalframePJ@gmail.com</a>
+                    <a href="#" class="footer-link" id="footer-artstation">ArtStation</a>
+                    <a href="https://www.instagram.com/pj_meit/" target="_blank" class="footer-link" id="footer-instagram">Instagram</a>
+                    <a href="https://vimeo.com/showcase/12236387" target="_blank" class="footer-link" id="footer-vimeo">Vimeo</a>
+                </div>
+                <div class="footer-cta-col">
+                    <h3 class="footer-col-title">START A PROJECT</h3>
+                    <p class="footer-cta-text">Open to freelance & studio collaboration.</p>
+                    <a href="https://line.me/ti/p/bFn92JRpQz" target="_blank" class="btn-primary btn-small" id="footer-contact-btn">
+                        GET IN TOUCH
+                        <span class="btn-line"></span>
+                    </a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <span class="footer-copy">&copy; 2026 AEVUM STUDIO. All rights reserved.</span>
+                <span class="footer-build">BUILD: v3.0.0 // CYBER_UI</span>
+            </div>
         </div>
-<div class="flex gap-6">
-<a class="font-label-mono-sm text-label-mono-sm text-text-muted hover:text-primary transition-colors ease-in-out duration-200 uppercase" href="#">SECURITY</a>
-<a class="font-label-mono-sm text-label-mono-sm text-text-muted hover:text-primary transition-colors ease-in-out duration-200 uppercase" href="#">PROTOCOL</a>
-<a class="font-label-mono-sm text-label-mono-sm text-text-muted hover:text-primary transition-colors ease-in-out duration-200 uppercase" href="#">CORE_OS</a>
-</div>
-</footer>
+        </footer>
 <script>
         // Simple ambient pulse effect for background
         setInterval(() => {
